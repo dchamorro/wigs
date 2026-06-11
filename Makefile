@@ -22,11 +22,4 @@ deploy:
 	@test -n "$(PGX)" || (echo "Uso: make deploy PGX=usuario@ip" && exit 1)
 	scp web/marcador.html $(PGX):/var/www/html/wig/marcador.html
 
-publicar:
-	@test -n "$(DATOS)" || (echo "Uso: make publicar DATOS=/ruta/tablero_con_datos.xlsx" && exit 1)
-	cp "$(DATOS)" web/tablero.xlsx
-	git add web/tablero.xlsx
-	git commit -m "data: tablero semanal $$(date +%Y-%m-%d)"
-	git push
-
-.PHONY: build demo test migrate deploy publicar
+.PHONY: build demo test migrate deploy

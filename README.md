@@ -19,11 +19,16 @@ make test                       # validar el contrato
 
 ## Publicación en Azure (acceso fuera de la LAN)
 
-Además del PGX, el marcador se publica en Azure Static Web Apps (cubierto por
-el crédito de Azure; el tier Free alcanza). Cada push a `main` que toque
-`web/` redeploya el sitio: el workflow copia `marcador.html` (con
-`DATA_URL: 'tablero.xlsx'` ya configurado, igual que en el PGX) y
-`web/tablero.xlsx` si existe.
+Además del PGX, el marcador se publica en Azure Static Web Apps (plan Free,
+cubierto por el crédito de Azure). Cada push a `main` que toque `web/`
+redeploya el sitio automáticamente.
+
+**Decisión de seguridad:** el sitio se publica **en modo arrastrar-y-soltar**
+— `tablero.xlsx` NO se sube a Azure porque contiene datos financieros
+internos y el sitio aún no tiene login. Para ver el marcador fuera de la LAN:
+abrir la URL del sitio y arrastrar el Excel (copia de `\\PGX\WIG`) sobre la
+página. El archivo debe venir guardado desde Excel (valores calculados; ver
+la nota de recalc en CLAUDE.md).
 
 **Configuración inicial (una vez):**
 1. En el portal de Azure crear una **Static Web App** (plan Free), fuente
@@ -32,11 +37,6 @@ el crédito de Azure; el tier Free alcanza). Cada push a `main` que toque
    genera su propio workflow, borrarlo — ya existe
    `.github/workflows/azure-static-web-apps.yml`.
 
-**Actualización semanal de datos:**
-```
-make publicar DATOS=/ruta/al/tablero_con_datos.xlsx
-```
-Copia el Excel (con los datos que digitaron los dueños en `\\PGX\WIG`) a
-`web/tablero.xlsx`, hace commit y push — Azure redeploya solo. Importante:
-el archivo debe venir guardado desde Excel/LibreOffice (valores calculados);
-ver la nota de recalc en CLAUDE.md.
+**Pendiente (decidir):** habilitar login en el sitio (Entra ID con usuarios
+invitados — el plan Free permite hasta 25) y entonces sí publicar
+`tablero.xlsx` automáticamente para que el marcador cargue solo.
