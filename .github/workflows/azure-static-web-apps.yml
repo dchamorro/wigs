@@ -1,36 +1,36 @@
-name: Deploy to Azure Static Web Apps
+name: Publicar marcador en Azure Static Web Apps
 
 on:
   push:
     branches: [main]
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/azure-static-web-apps.yml'
+  workflow_dispatch:
 
 jobs:
-  build_and_deploy:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+  deploy:
     runs-on: ubuntu-latest
-    name: Build and Deploy
     steps:
       - uses: actions/checkout@v4
+
+      - name: Preparar sitio (igual que el PGX, DATA_URL same-origin)
+        run: |
+          mkdir -p _site
+          sed "s/DATA_URL: ''/DATA_URL: 'tablero.xlsx'/" web/marcador.html > _site/marcador.html
+          grep -q "DATA_URL: 'tablero.xlsx'" _site/marcador.html || { echo "No se pudo configurar DATA_URL — cambió la línea CONFIG en marcador.html"; exit 1; }
+          cp _site/marcador.html _site/index.html
+          cp web/staticwebapp.config.json _site/
+          if [ -f web/tablero.xlsx ]; then
+            cp web/tablero.xlsx _site/
+          else
+            echo "Aviso: web/tablero.xlsx no existe — el marcador quedará en modo arrastrar-y-soltar"
+          fi
+
       - name: Deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: '/'
-          output_location: ''
+          app_location: '_site'
           skip_app_build: true
-
-  close_pr_environment:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close PR preview environment
-    steps:
-      - name: Close
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: close

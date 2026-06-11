@@ -1,14 +1,10 @@
 {
-  "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/assets/*", "/data/*"]
-  },
   "mimeTypes": {
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   },
   "routes": [
     {
-      "route": "/data/*",
+      "route": "/tablero.xlsx",
       "headers": {
         "cache-control": "no-cache, no-store, must-revalidate"
       }
