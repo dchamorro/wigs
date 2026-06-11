@@ -1,0 +1,17 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "/data/*"]
+  },
+  "mimeTypes": {
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  "routes": [
+    {
+      "route": "/data/*",
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate"
+      }
+    }
+  ]
+}

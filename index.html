@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WIG Scoreboard</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <h1 id="board-title">WIG Scoreboard</h1>
+      <p id="board-subtitle" class="subtitle"></p>
+    </div>
+    <div class="header-meta">
+      <span id="last-updated"></span>
+    </div>
+  </header>
+
+  <main id="scoreboard" class="scoreboard">
+    <p class="loading">Loading scoreboard…</p>
+  </main>
+
+  <footer class="site-footer">
+    <p>Data source: <code id="data-source"></code></p>
+  </footer>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
