@@ -11,6 +11,9 @@ jobs:
         run: |
           pip install openpyxl
           WIG_XLSX=web/tablero.xlsx python3 tests/test_contract.py
+      - name: Configure DATA_URL for Azure
+        run: |
+          sed -i "s/DATA_URL: ''/DATA_URL: 'tablero.xlsx'/" web/marcador.html
       - name: Set default document
         run: cp web/marcador.html web/index.html
       - name: Verify deploy contents
