@@ -24,7 +24,9 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
 - `scripts/build_demo.py` — incrusta un xlsx en el HTML (demo standalone).
 - `web/marcador.html` — el marcador del TV. Autocontenido (SheetJS embebido,
   funciona offline). CONFIG al inicio del script: `DATA_URL` (vacío = drag-drop)
-  y `REFRESH_MIN`.
+  y `REFRESH_MIN`. Tema claro/oscuro (botón ◐ o tecla T, persiste en
+  localStorage). Tocar/clicar un lead abre su detalle (historia del indicador
+  + compromisos de la pestaña Compromisos); apto para pantallas táctiles.
 - `deploy/setup-wig.sh` — instala Samba + nginx + timer de publicación en el PGX.
 - `.github/workflows/azure-static-web-apps.yml` — publica marcador.html +
   `web/tablero.xlsx` a Azure Static Web Apps en cada push a main que toque
@@ -40,7 +42,8 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
 cambio estructural en `build_wig.py` debe reflejarse en el parser y en
 `tests/test_contract.py`, en el mismo commit.
 
-Pestañas: `Dashboard` (primera), pestañas de WIG, `Instrucciones` (ignorada).
+Pestañas: `Dashboard` (primera), pestañas de WIG, `Compromisos` (tabla plana
+que alimenta el detalle de cada lead en el TV) e `Instrucciones` (ignorada).
 
 Por pestaña de WIG:
 | Celda/Col | Contenido |
@@ -56,6 +59,11 @@ Por pestaña de WIG:
 
 Dashboard: C4 meta anual NAT · filas 7–18: A mes, B meta, C real (input),
 D/E acumulados, F %, G estado.
+
+Compromisos (encabezados fijos en fila 1, datos desde fila 2):
+`Semana | WIG | Lead | Compromiso | Responsable | Estado` — WIG = 1–9 (número
+de pestaña), Lead = 1–8, Estado = `Pendiente`/`Hecho`. El parser la lee por
+posición A–F y es opcional (sin pestaña = sin compromisos en el detalle).
 
 Reglas duras:
 - DATA0 = fila 11. MAX_LEADS = 8. No cambiar sin tocar parser + tests + migrate.

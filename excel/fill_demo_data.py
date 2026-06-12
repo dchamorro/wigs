@@ -45,6 +45,30 @@ def main(inp, out):
     d = wb['Dashboard']
     for i,v in enumerate([70000,78000,90000,85000,95000]):
         d.cell(row=7+i,column=3,value=v)
+    if 'Compromisos' in wb.sheetnames:
+        from datetime import date, timedelta
+        cs = wb['Compromisos']
+        lunes = [date(2026,6,15)+timedelta(days=7*i) for i in range(8)]
+        demo = [
+            (lunes[6],1,1,'Firmar asignación de 20 equipos con Promerica','R. Castillo','Hecho'),
+            (lunes[6],1,2,'Agendar demo Smart User con Disnorte','C. Mendoza','Hecho'),
+            (lunes[7],1,1,'Cerrar compromiso de asignación con BAC (15 equipos)','R. Castillo','Pendiente'),
+            (lunes[7],1,2,'Preparar POC para cliente retail','C. Mendoza','Pendiente'),
+            (lunes[5],2,1,'Presentar propuesta advisory a Lafise','M. Aguilar','Hecho'),
+            (lunes[6],2,1,'Enviar propuesta de health check a Claro','M. Aguilar','Hecho'),
+            (lunes[7],2,2,'Cotizar 40 horas advisory para banco regional','P. Downs','Pendiente'),
+            (lunes[6],4,1,'Completar checklist de entregas de la semana','K. Solis','Hecho'),
+            (lunes[7],4,2,'Escalar riesgo de inventario del proyecto X','K. Solis','Hecho'),
+            (lunes[7],6,1,'Plan de renovación para 3 contratos a 90 días','D. Lacayo','Pendiente'),
+        ]
+        for i,(f,wg,ld,txt,resp,est) in enumerate(demo):
+            r = 2+i
+            cs.cell(row=r,column=1,value=f)
+            cs.cell(row=r,column=2,value=wg)
+            cs.cell(row=r,column=3,value=ld)
+            cs.cell(row=r,column=4,value=txt)
+            cs.cell(row=r,column=5,value=resp)
+            cs.cell(row=r,column=6,value=est)
     wb.save(out)
     print('demo data ->', out)
 
