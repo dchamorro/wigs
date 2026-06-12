@@ -26,10 +26,12 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
   funciona offline). CONFIG al inicio del script: `DATA_URL` (vacío = drag-drop)
   y `REFRESH_MIN`.
 - `deploy/setup-wig.sh` — instala Samba + nginx + timer de publicación en el PGX.
-- `.github/workflows/azure-static-web-apps.yml` — publica marcador.html a
-  Azure Static Web Apps en cada push a main, en modo arrastrar-y-soltar
-  (DATA_URL vacío): `tablero.xlsx` NO se publica hasta que el sitio tenga
-  login (ver "Pendiente" en README). No commitear tablero.xlsx (gitignored).
+- `.github/workflows/azure-static-web-apps.yml` — publica marcador.html +
+  `web/tablero.xlsx` a Azure Static Web Apps en cada push a main que toque
+  `web/`. Parcha `DATA_URL: 'tablero.xlsx'` al deployar (misma convención
+  que el PGX; el fuente queda con DATA_URL vacío). El sitio está restringido
+  por IP a la oficina (tier Standard). Los datos se suben con
+  `make publicar DATOS=...` (valida contrato + recalc antes de pushear).
 - `tests/test_contract.py` — valida el contrato Excel↔parser (ver abajo).
 
 ## EL CONTRATO Excel ↔ parser (no romper)

@@ -2,6 +2,3 @@
 node_modules/
 .context/
 .gstack/
-
-# Datos financieros internos — no publicar hasta que el sitio tenga login
-web/tablero.xlsx

@@ -18,13 +18,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Modo arrastrar-y-soltar: tablero.xlsx NO se publica (datos financieros
-      # internos, el sitio aún no tiene login — ver "Pendiente" en README).
+      # El sitio queda restringido por IP (networking.allowedIpRanges en
+      # web/staticwebapp.config.json) — solo la oficina ve el marcador.
+      # Requiere el tier Standard de Static Web Apps.
+      - name: Verificar que la IP de oficina esté configurada
+        run: |
+          if grep -q "REEMPLAZAR-IP-OFICINA" web/staticwebapp.config.json; then
+            echo "::error::Falta la IP pública de la oficina en web/staticwebapp.config.json (allowedIpRanges). Sin ella el sitio quedaría mal restringido."
+            exit 1
+          fi
+
       - name: Preparar sitio
         run: |
           mkdir -p _site
-          cp web/marcador.html _site/marcador.html
-          cp web/marcador.html _site/index.html
+          if [ -f web/tablero.xlsx ]; then
+            sed "s/const CONFIG = { DATA_URL: ''/const CONFIG = { DATA_URL: 'tablero.xlsx'/" web/marcador.html > _site/marcador.html
+            [ "$(grep -c "const CONFIG = { DATA_URL: 'tablero.xlsx'" _site/marcador.html)" = "1" ] || { echo "::error::No se pudo configurar DATA_URL — cambió la línea CONFIG en marcador.html"; exit 1; }
+            cp web/tablero.xlsx _site/
+          else
+            echo "::warning::web/tablero.xlsx no existe — se publica en modo arrastrar-y-soltar; correr 'make publicar DATOS=...' para subir datos"
+            cp web/marcador.html _site/marcador.html
+          fi
+          cp _site/marcador.html _site/index.html
           cp web/staticwebapp.config.json _site/
 
       - name: Deploy

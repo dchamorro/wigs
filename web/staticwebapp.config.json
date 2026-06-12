@@ -1,4 +1,7 @@
 {
+  "networking": {
+    "allowedIpRanges": ["REEMPLAZAR-IP-OFICINA/32"]
+  },
   "mimeTypes": {
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   },

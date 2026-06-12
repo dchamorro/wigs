@@ -17,26 +17,32 @@ make test                       # validar el contrato
 2. `make deploy PGX=usuario@ip` para publicar marcador.html.
 3. El tablero compartido vive en `\\PGX\WIG`; los dueños digitan cada lunes.
 
-## Publicación en Azure (acceso fuera de la LAN)
+## Publicación en Azure (pantallas de la oficina)
 
-Además del PGX, el marcador se publica en Azure Static Web Apps (plan Free,
-cubierto por el crédito de Azure). Cada push a `main` que toque `web/`
-redeploya el sitio automáticamente.
+El marcador se publica en Azure Static Web Apps con los datos incluidos.
+**Decisión de seguridad:** el sitio está restringido por IP a la red de la
+oficina (`networking.allowedIpRanges` en `web/staticwebapp.config.json`) —
+solo las pantallas/equipos en la oficina pueden verlo. Es la misma frontera
+de confianza que el PGX en la LAN. Requiere el tier **Standard** (~$9/mes,
+cubierto por el crédito de Azure).
 
-**Decisión de seguridad:** el sitio se publica **en modo arrastrar-y-soltar**
-— `tablero.xlsx` NO se sube a Azure porque contiene datos financieros
-internos y el sitio aún no tiene login. Para ver el marcador fuera de la LAN:
-abrir la URL del sitio y arrastrar el Excel (copia de `\\PGX\WIG`) sobre la
-página. El archivo debe venir guardado desde Excel (valores calculados; ver
-la nota de recalc en CLAUDE.md).
+**Ritual del lunes (1 persona, Plans & Controls):**
+```
+make publicar DATOS=/ruta/al/tablero_con_datos.xlsx
+```
+Valida el archivo (pruebas de contrato + chequeo de recalc — un tablero roto
+o sin valores calculados NO se publica), lo copia a `web/tablero.xlsx`, hace
+commit y push — Azure redeploya solo en ~1 minuto. El archivo debe venir
+guardado desde Excel (la copia de `\\PGX\WIG` ya cumple).
 
 **Configuración inicial (una vez):**
-1. En el portal de Azure crear una **Static Web App** (plan Free), fuente
-   GitHub → repo `dchamorro/wigs`, rama `main`, preset *Custom*.
+1. En el portal de Azure crear una **Static Web App**, fuente GitHub →
+   repo `dchamorro/wigs`, rama `main`, preset *Custom*; subir el plan a
+   **Standard** (Hosting plan).
 2. Azure agrega el secret `AZURE_STATIC_WEB_APPS_API_TOKEN` al repo. Si Azure
    genera su propio workflow, borrarlo — ya existe
    `.github/workflows/azure-static-web-apps.yml`.
-
-**Pendiente (decidir):** habilitar login en el sitio (Entra ID con usuarios
-invitados — el plan Free permite hasta 25) y entonces sí publicar
-`tablero.xlsx` automáticamente para que el marcador cargue solo.
+3. Poner la IP pública de la oficina en `web/staticwebapp.config.json`
+   (reemplazar `REEMPLAZAR-IP-OFICINA`). El workflow se niega a deployar
+   mientras quede el placeholder. Si la oficina tiene varias salidas a
+   internet, agregar cada una al array.

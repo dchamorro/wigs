@@ -86,7 +86,8 @@ def test_html_parser_matches():
     for anchor in ("g('B2')", "g('B4')", "g('B5')", "g('E10')", "g('B'+r)",
                    "g('C4')", "encode_col(8+2*k)"):
         assert anchor in html, f'parser: ancla {anchor} no encontrada — contrato roto'
-    assert "DATA_URL" in html, 'falta bloque CONFIG de producción'
+    assert "const CONFIG = { DATA_URL: ''" in html, (
+        'falta la línea CONFIG exacta — el workflow de Azure parchea esa cadena literal')
 
 
 def test_recalculated():
