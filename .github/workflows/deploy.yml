@@ -1,18 +1,20 @@
-name: Build and deploy WIG scoreboard
+name: Deploy WIG scoreboard
 on:
   push:
     branches: [main]
 jobs:
-  build_and_deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install build deps
+      - name: Validate Excel contract
         run: |
-          sudo apt-get update && sudo apt-get install -y libreoffice
           pip install openpyxl
-      - name: Build
-        run: make build
+          WIG_XLSX=web/tablero.xlsx python3 tests/test_contract.py
+      - name: Set default document
+        run: cp web/marcador.html web/index.html
+      - name: Verify deploy contents
+        run: ls -la web
       - name: Deploy to App Service
         uses: azure/webapps-deploy@v3
         with:
