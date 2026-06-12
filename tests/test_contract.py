@@ -34,7 +34,6 @@ def test_tabs_exist():
     names = wb().sheetnames
     assert names[0] == 'Dashboard'
     assert 'Instrucciones' in names
-    assert 'Compromisos' in names
     wig_tabs = [n for n in names if n not in NO_WIG]
     assert len(wig_tabs) >= 1, 'Debe existir al menos una pestaña de WIG'
 
@@ -76,11 +75,15 @@ def test_wig_tab_layout():
 
 
 def test_compromisos_layout():
-    """La pestaña Compromisos es una tabla plana que el parser lee por encabezados."""
-    ws = wb()['Compromisos']
+    """Compromisos es OPCIONAL (tableros previos no la tienen y el parser la
+    trata como opcional). Si existe, sus encabezados deben ser los del contrato."""
+    book = wb()
+    if 'Compromisos' not in book.sheetnames:
+        return
+    ws = book['Compromisos']
     hdrs = [ws.cell(row=1, column=c).value for c in range(1, 7)]
     assert hdrs == ['Semana', 'WIG', 'Lead', 'Compromiso', 'Responsable', 'Estado'], \
-        f'Compromisos: encabezados inesperados {hdrs} — el parser del marcador los lee por nombre'
+        f'Compromisos: encabezados inesperados {hdrs} — el parser del marcador los lee por posición A–F'
 
 
 def test_dashboard_layout():
