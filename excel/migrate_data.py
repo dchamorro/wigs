@@ -19,7 +19,7 @@ from openpyxl import load_workbook
 
 DATA0 = 11
 MAX_LEADS = 8
-SKIP = {'Dashboard', 'Instrucciones'}
+SKIP = {'Dashboard', 'Instrucciones', 'Compromisos'}
 
 
 def date_map(ws):
@@ -71,6 +71,20 @@ def main(old_path, new_path, out_path):
                     moved += 1
         dropped = len(set(omap) - set(nmap))
         report.append(f'  {name}: {moved} celdas migradas' + (f' · ⚠ {dropped} periodos del viejo no existen en el nuevo' if dropped else ''))
+
+    # Compromisos: copia plana de filas digitadas (A2:F...)
+    if 'Compromisos' in old.sheetnames and 'Compromisos' in new.sheetnames:
+        oc, nc = old['Compromisos'], new['Compromisos']
+        moved = 0
+        for r in range(2, oc.max_row + 1):
+            if all(oc.cell(row=r, column=c).value is None for c in range(1, 7)):
+                continue
+            for c in range(1, 7):
+                v = oc.cell(row=r, column=c).value
+                if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                    nc.cell(row=r, column=c, value=v)
+            moved += 1
+        report.append(f'  Compromisos: {moved} filas migradas')
 
     # Dashboard NAT
     if 'Dashboard' in old.sheetnames:

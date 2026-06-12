@@ -329,6 +329,45 @@ for cl, wd in {'A': 5, 'B': 52, 'C': 16, 'D': 30, 'E': 11, 'F': 11, 'G': 11, 'H'
     ws.column_dimensions[cl].width = wd
 for i in range(len(WIGS)): ws.row_dimensions[R0 + 1 + i].height = 30
 
+# ---------- Compromisos ----------
+# Tabla plana de compromisos semanales por WIG/lead. El marcador la lee por
+# encabezados (fila 1) — el detalle de cada lead muestra sus compromisos.
+from openpyxl.worksheet.datavalidation import DataValidation
+comp = wb.create_sheet('Compromisos')
+comp.sheet_view.showGridLines = False
+COMP_HDRS = ['Semana', 'WIG', 'Lead', 'Compromiso', 'Responsable', 'Estado']
+COMP_ROWS = 400
+for c, h in enumerate(COMP_HDRS, 1):
+    cell = comp.cell(row=1, column=c, value=h)
+    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
+dv_wig = DataValidation(type='list', formula1='"1,2,3,4,5,6,7,8,9"', allow_blank=True)
+dv_lead = DataValidation(type='list', formula1='"1,2,3,4,5,6,7,8"', allow_blank=True)
+dv_estado = DataValidation(type='list', formula1='"Pendiente,Hecho"', allow_blank=True)
+for dv in (dv_wig, dv_lead, dv_estado):
+    comp.add_data_validation(dv)
+dv_wig.add(f'B2:B{COMP_ROWS + 1}')
+dv_lead.add(f'C2:C{COMP_ROWS + 1}')
+dv_estado.add(f'F2:F{COMP_ROWS + 1}')
+for r in range(2, COMP_ROWS + 2):
+    for c in range(1, 7):
+        cell = comp.cell(row=r, column=c)
+        cell.border = BORDER
+        cell.font = F_INPUT if c != 4 else F_INPUT_S
+        if c in (2, 3, 6): cell.alignment = CENTER
+        if c == 4: cell.alignment = WRAP
+    comp.cell(row=r, column=1).number_format = 'dd-mmm-yy'
+comp.conditional_formatting.add(
+    f'F2:F{COMP_ROWS + 1}',
+    Rule(type='containsText', operator='containsText', text='Hecho', dxf=GREEN_DXF,
+         formula=['NOT(ISERROR(SEARCH("Hecho",F2)))']))
+comp.conditional_formatting.add(
+    f'F2:F{COMP_ROWS + 1}',
+    Rule(type='containsText', operator='containsText', text='Pendiente', dxf=YEL_DXF,
+         formula=['NOT(ISERROR(SEARCH("Pendiente",F2)))']))
+for cl, wd in {'A': 11, 'B': 6, 'C': 6, 'D': 64, 'E': 18, 'F': 12}.items():
+    comp.column_dimensions[cl].width = wd
+comp.freeze_panes = 'A2'
+
 # ---------- Instrucciones ----------
 ins = wb.create_sheet('Instrucciones')
 ins.sheet_view.showGridLines = False
@@ -347,7 +386,9 @@ lines = [
     ('• El % de cada lead se calcula automáticamente contra su meta. Dejar la meta vacía desactiva el lead ("(Disponible)").', F_TXT),
     ('• Definan todos los leads en positivo (más = mejor) para que el % se lea igual en todos.', F_TXT),
     ('', None),
-    ('CÓDIGO DE COLORES:', F_LBL),
+    ('COMPROMISOS SEMANALES (pestaña "Compromisos"):', F_LBL),
+    ('• En la cadencia, cada quien registra sus compromisos de la semana: fecha (Semana), número de WIG (1–9), número de lead (1–8), el compromiso, el responsable y el estado (Pendiente / Hecho).', F_TXT),
+    ('• En el marcador del televisor, al tocar un lead se abre su detalle con la historia del indicador y sus compromisos.', F_TXT),
     ('• Texto AZUL = celdas de entrada. Texto NEGRO = fórmulas (no tocar). Texto VERDE = vínculos entre pestañas.', F_TXT),
     ('• Fondo AMARILLO = supuestos pendientes de definir (dueños, metas "X" de los WIGs 2 y 9).', F_TXT),
     ('• Estado: En meta ≥ 95% del plan · Riesgo 80–95% · Atrasado < 80%.', F_TXT),

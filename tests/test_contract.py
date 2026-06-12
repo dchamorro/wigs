@@ -27,18 +27,22 @@ def wb():
     return load_workbook(WB_PATH, data_only=False)
 
 
+NO_WIG = ('Dashboard', 'Instrucciones', 'Compromisos')
+
+
 def test_tabs_exist():
     names = wb().sheetnames
     assert names[0] == 'Dashboard'
     assert 'Instrucciones' in names
-    wig_tabs = [n for n in names if n not in ('Dashboard', 'Instrucciones')]
+    assert 'Compromisos' in names
+    wig_tabs = [n for n in names if n not in NO_WIG]
     assert len(wig_tabs) >= 1, 'Debe existir al menos una pestaña de WIG'
 
 
 def test_wig_tab_layout():
     book = wb()
     for name in book.sheetnames:
-        if name in ('Dashboard', 'Instrucciones'):
+        if name in NO_WIG:
             continue
         ws = book[name]
         # encabezado que el parser lee
@@ -71,6 +75,14 @@ def test_wig_tab_layout():
         assert found >= 1, f'{name}: ningún lead activo en fila 8'
 
 
+def test_compromisos_layout():
+    """La pestaña Compromisos es una tabla plana que el parser lee por encabezados."""
+    ws = wb()['Compromisos']
+    hdrs = [ws.cell(row=1, column=c).value for c in range(1, 7)]
+    assert hdrs == ['Semana', 'WIG', 'Lead', 'Compromiso', 'Responsable', 'Estado'], \
+        f'Compromisos: encabezados inesperados {hdrs} — el parser del marcador los lee por nombre'
+
+
 def test_dashboard_layout():
     ws = wb()['Dashboard']
     assert ws['C4'].value is not None, 'Dashboard: falta meta anual en C4'
@@ -84,7 +96,7 @@ def test_html_parser_matches():
     assert os.path.exists(HTML_PATH), f'falta {HTML_PATH}'
     html = open(HTML_PATH, encoding='utf-8').read()
     for anchor in ("g('B2')", "g('B4')", "g('B5')", "g('E10')", "g('B'+r)",
-                   "g('C4')", "encode_col(8+2*k)"):
+                   "g('C4')", "encode_col(8+2*k)", "'Compromisos'"):
         assert anchor in html, f'parser: ancla {anchor} no encontrada — contrato roto'
     assert "const CONFIG = { DATA_URL: ''" in html, (
         'falta la línea CONFIG exacta — el workflow de Azure parchea esa cadena literal')
@@ -93,7 +105,7 @@ def test_html_parser_matches():
 def test_recalculated():
     """SheetJS lee valores cacheados: el workbook publicado debe estar recalculado."""
     book = load_workbook(WB_PATH, data_only=True)
-    name = [n for n in book.sheetnames if n not in ('Dashboard', 'Instrucciones')][0]
+    name = [n for n in book.sheetnames if n not in NO_WIG][0]
     ws = book[name]
     v = ws.cell(row=DATA0, column=3).value  # Meta: fórmula en tabs acum, constante en nivel
     assert v is not None, ('Sin valores cacheados: ejecutar python3 scripts/recalc.py ' + WB_PATH)
