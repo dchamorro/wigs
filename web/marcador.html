@@ -216,7 +216,7 @@ canvas{flex:1;width:100%;min-height:0}
     <span>Rotación cada <input id="interval" type="number" min="5" value="20"> s</span>
     <button id="btnFull">⛶ Pantalla completa</button>
     <button id="btnTheme" title="Cambiar tema claro/oscuro">◐ Tema</button>
-    <span class="sp hint">Atajos: ←/→ navegar · espacio pausar · F pantalla completa · T tema · Toca un lead para ver su detalle · Arrastra el Excel actualizado aquí para refrescar</span>
+    <span class="sp hint">Atajos: ←/→ o desliza para navegar · espacio pausar · F pantalla completa · T tema · Toca un lead para ver su detalle · Arrastra el Excel actualizado aquí para refrescar</span>
   </div>
 </div>
 
@@ -240,8 +240,11 @@ canvas{flex:1;width:100%;min-height:0}
      - Vacío ('') = modo manual: arrastrar el archivo a la pantalla.
      - Ejemplo mismo servidor:  'tablero.xlsx'
      - Ejemplo Google Drive:    'https://www.googleapis.com/drive/v3/files/FILE_ID?alt=media&key=API_KEY'
-   REFRESH_MIN: cada cuántos minutos recargar el archivo automáticamente. */
-const CONFIG = { DATA_URL: '', REFRESH_MIN: 10 };
+   REFRESH_MIN: cada cuántos minutos recargar el archivo automáticamente.
+   IDLE_SEC: segundos sin tocar la pantalla tras los cuales el marcador
+     vuelve solo a rotar (cierra el detalle abierto y reanuda). Evita que el
+     tablero quede congelado si alguien lo deja pausado o con un lead abierto. */
+const CONFIG = { DATA_URL: '', REFRESH_MIN: 10, IDLE_SEC: 75 };
 /* ================================================================ */
 const $=s=>document.querySelector(s);
 const SKIP=['Dashboard','Instrucciones','Compromisos'];
@@ -263,7 +266,20 @@ const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','
 const fmtDate=d=>d.getDate()+' '+MESES[d.getMonth()];
 const num=v=>(typeof v==='number'&&isFinite(v))?v:null;
 
-let slides=[], idx=0, timer=null, paused=false;
+let slides=[], idx=0, timer=null, paused=false, idleTimer=null;
+
+/* ---------- volver solo a rotar tras inactividad ----------
+   En un display de pared nadie cierra el detalle ni reanuda la pausa: si
+   alguien lo deja abierto/pausado, tras CONFIG.IDLE_SEC el marcador se
+   restablece solo (cierra el detalle y reanuda la rotación). */
+function resetIdle(){
+  clearTimeout(idleTimer);
+  const s=Math.max(10,+CONFIG.IDLE_SEC||75);
+  idleTimer=setTimeout(()=>{
+    if(detailOpen) closeDetail();
+    if(paused) setPaused(false);
+  }, s*1000);
+}
 
 function fmtFromCell(cell){            // use the Excel cell's own number format
   const t=cell?String(cell.w||cell.z||''):'';
@@ -704,9 +720,23 @@ $('#btnTheme').onclick=()=>applyTheme(document.documentElement.dataset.theme==='
 $('#interval').onchange=restartTimer;
 /* toque/clic en un lead → detalle (delegado: las tiles se reconstruyen con cada carga) */
 $('#stage').addEventListener('click',e=>{
+  if(swiped){swiped=false;return;}            // un deslizamiento no abre detalle
   const tile=e.target.closest('.lead');
   if(tile&&slides[idx]) openDetail(slides[idx].w,+tile.dataset.k);
 });
+/* deslizar ←/→ sobre el escenario para cambiar de WIG (pantalla táctil) */
+let swX=0,swY=0,swiped=false;
+$('#stage').addEventListener('touchstart',e=>{
+  const t=e.changedTouches[0]; swX=t.clientX; swY=t.clientY; swiped=false;
+},{passive:true});
+$('#stage').addEventListener('touchend',e=>{
+  if(detailOpen)return;
+  const t=e.changedTouches[0], dx=t.clientX-swX, dy=t.clientY-swY;
+  // sólo cuenta como deslizamiento si es claramente horizontal
+  if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
+    swiped=true; go(dx<0?idx+1:idx-1);
+  }
+},{passive:true});
 $('#stage').addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('lead')){
     e.preventDefault(); e.stopPropagation();
@@ -725,6 +755,8 @@ document.addEventListener('keydown',e=>{
   else if(e.key.toLowerCase()==='f')$('#btnFull').click();
   else if(e.key.toLowerCase()==='t')$('#btnTheme').click();
 });
+/* cualquier interacción reinicia el reloj de inactividad */
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,resetIdle,{passive:true}));
 applyTheme((()=>{try{return localStorage.getItem('wig_theme')||'dark';}catch(e){return 'dark';}})());
 window.addEventListener('resize',()=>{if(slides[idx]){const cv=slides[idx].el.querySelector('canvas');if(cv)drawChart(cv,slides[idx].w);}});
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toLocaleTimeString('es-NI',{hour:'2-digit',minute:'2-digit'});},1000);
