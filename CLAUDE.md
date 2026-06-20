@@ -46,10 +46,11 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
 cambio estructural en `build_wig.py` debe reflejarse en el parser y en
 `tests/test_contract.py`, en el mismo commit.
 
-Pestañas: `Dashboard` (primera), 12 pestañas de WIG (`1. …` … `12. …`) e
-`Instrucciones` (ignorada). `Compromisos` ya **no se genera** (se quitó en la
-reestructuración a 12 WIGs), pero el parser conserva soporte **opcional**: si
-un tablero viejo la trae, alimenta el detalle de cada lead en el TV.
+Pestañas: `Dashboard` (primera), 12 pestañas de WIG (`1. …` … `12. …`), 3
+páginas de backlog (`Backlog 2027/2028/2029`) e `Instrucciones` (ignorada). El
+parser **omite** Dashboard, Instrucciones, Compromisos y todo lo que empiece
+con `Backlog ` (no son slides de WIG). `Compromisos` ya **no se genera** pero
+el parser conserva soporte **opcional** para tableros viejos que la traigan.
 
 Por pestaña de WIG:
 | Celda/Col | Contenido |
@@ -63,13 +64,26 @@ Por pestaña de WIG:
 | Fila 9, misma col | Meta del lead |
 | Filas 11+ | B fecha · C meta · D real (input) · E/F acumulados · G % · H estado · I+2k real lead · J+2k % lead |
 
-Dashboard (dos bloques + tabla de soporte):
-- Trayectoria NAT 2026→2028: encabezados fila 5, datos filas 6–8
+Dashboard (cuatro bloques + tabla de soporte):
+- Trayectoria NAT 2026→2029: encabezados fila 5, datos filas 6–9
   (A año · B ingreso · C GP% · D NAT meta · E NAT% · F NAT real input · G estado).
-- Seguimiento mensual NAT del año en curso: **C12 meta anual NAT** · encabezados
-  fila 14 · filas 15–26: A mes, B meta, C real (input), D/E acumulados, F %,
-  G estado. **El parser del TV lee este bloque (C12 + filas 15–26).**
-- WIGs de soporte: encabezados fila 30, una fila por WIG (31–42).
+  **El parser del TV lee estas 4 filas** (año + NAT meta col D + NAT real col F).
+- Cobertura de backlog: encabezados fila 13, datos filas 14–16 (un año por fila)
+  (A año · B GP meta · C GP comprometido · D brecha · E % cobertura) — fórmulas
+  que referencian las páginas `Backlog <año>`. **El parser del TV lee 14–16.**
+- Seguimiento mensual NAT del año en curso: **C19 meta anual NAT** · encabezados
+  fila 21 · filas 22–33: A mes, B meta, C real (input), D/E acumulados, F %,
+  G estado. **El parser del TV lee este bloque (C19 + filas 22–33).**
+- WIGs de soporte: encabezados fila 36, una fila por WIG (37–48).
+
+Páginas `Backlog <año>` (contratos ya conocidos que operarán ese año):
+| Celda/Col | Contenido |
+|---|---|
+| B4 / E4 | Ingreso meta / GP meta % (E4 editable si es supuesto, p. ej. 2029) |
+| B5 | **GP meta = Ingreso × GP%** (`=B4*E4`) — lo que la cobertura referencia |
+| B6 / E6 / B7 | GP comprometido (último) / % cobertura / brecha |
+| Filas 12+ | A semana · B GP comprometido acum. (input) · C GP meta · D brecha · E % |
+El Dashboard las lee por posición fija (B5/B6/B7/E6); migrate copia la col B por fecha.
 
 Compromisos (legado/opcional; el build ya no la genera). Si existe: encabezados
 fijos en fila 1, datos desde fila 2: `Semana | WIG | Lead | Compromiso |

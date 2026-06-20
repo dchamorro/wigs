@@ -46,9 +46,20 @@ def main(inp, out):
                 else: v=round(v,2)
                 s.cell(row=r,column=c,value=v)
     d = wb['Dashboard']
-    # NAT real mensual del año en curso: bloque mensual desde la fila 15 (col C)
+    # NAT real mensual del año en curso: bloque mensual desde la fila 22 (col C)
     for i,v in enumerate([70000,78000,90000,85000,95000]):
-        d.cell(row=15+i,column=3,value=v)
+        d.cell(row=22+i,column=3,value=v)
+    # Backlog: GP comprometido acumulado por semana (col B, desde fila 12) — demo
+    BL_DEMO = {
+        'Backlog 2027': [2000000,2150000,2300000,2450000,2600000],
+        'Backlog 2028': [1600000,1900000,2150000,2350000,2500000],
+        'Backlog 2029': [700000,950000,1150000,1350000,1550000],
+    }
+    for tab,vals in BL_DEMO.items():
+        if tab not in wb.sheetnames: continue
+        bs = wb[tab]
+        for i,v in enumerate(vals):
+            bs.cell(row=12+i,column=2,value=v)
     if 'Compromisos' in wb.sheetnames:
         from datetime import date, timedelta
         cs = wb['Compromisos']

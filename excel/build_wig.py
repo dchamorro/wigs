@@ -297,25 +297,102 @@ def build_wig_tab(w):
 
 lasts = {w['tab']: build_wig_tab(w) for w in WIGS}
 
+# ---------- Páginas de Backlog por año (cobertura de GP comprometido) ----------
+# Cada contrato ya conocido que operará en el año aporta GP comprometido. Cada
+# semana de este año se actualiza el GP comprometido (acumulado) y se ve la
+# brecha vs la meta de GP del año (Ingreso × GP%). La brecha es el GP que aún
+# falta vender. Filas semanales = lunes de 2026 (mismo calendario que los WIGs W).
+BACKLOG_START = date(2026, 6, 15)
+BACKLOG_END = date(2026, 12, 28)
+BL_DATA0 = 12
+BACKLOG_YEARS = [
+    dict(tab='Backlog 2027', year='2027', ingreso=21000000, gp_pct=0.16, nat_meta=1000000, assume_gp=False),
+    dict(tab='Backlog 2028', year='2028', ingreso=28571000, gp_pct=0.164, nat_meta=2000000, assume_gp=False),
+    # 2029: vende $2M más que 2028; margen neto 8%; GP% es supuesto editable.
+    dict(tab='Backlog 2029', year='2029', ingreso=30571000, gp_pct=0.165, nat_meta=2445680, assume_gp=True),
+]
+
+def build_backlog_tab(b):
+    ws = wb.create_sheet(b['tab'])
+    ws.sheet_view.showGridLines = False
+    periods = mondays(BACKLOG_START, BACKLOG_END)
+    last = BL_DATA0 + len(periods) - 1
+    ws.merge_cells('A1:F1')
+    ws['A1'] = f"Backlog {b['year']} — cobertura de GP ya comprometido"; ws['A1'].font = F_TITLE
+    ws.merge_cells('A2:F2')
+    ws['A2'] = (f"Contratos ya conocidos que operarán en {b['year']}: su GP comprometido (acumulado) vs la "
+                f"meta de GP del año. La brecha es el GP que aún falta vender. Se actualiza cada semana de "
+                f"{BACKLOG_START.year}.")
+    ws['A2'].font = F_TXT; ws['A2'].alignment = WRAP
+    def lbl(c, t): ws[c] = t; ws[c].font = F_LBL
+    def numc(c, v, f=USD, font=F_FORM):
+        cell = ws[c]; cell.value = v; cell.font = font; cell.number_format = f
+    lbl('A4', 'Ingreso meta:'); numc('B4', b['ingreso'])
+    lbl('D4', 'GP meta %:')
+    gp = ws['E4']; gp.value = b['gp_pct']; gp.number_format = PCT
+    gp.font = F_INPUT if b['assume_gp'] else F_FORM
+    if b['assume_gp']: gp.fill = FILL_YEL  # supuesto a confirmar
+    lbl('A5', 'GP meta (Ingreso × GP%):'); numc('B5', '=B4*E4')
+    lbl('D5', 'NAT meta:'); numc('E5', b['nat_meta'])
+    lbl('A6', 'GP comprometido (último):')
+    numc('B6', f'=IFERROR(LOOKUP(2,1/($B${BL_DATA0}:$B${last}<>""),$B${BL_DATA0}:$B${last}),0)')
+    lbl('D6', '% cobertura:'); ws['E6'].value = '=IFERROR(B6/B5,0)'; ws['E6'].number_format = PCT; ws['E6'].font = F_FORM
+    lbl('A7', 'Brecha (falta vender):'); numc('B7', '=B5-B6')
+    ws['A9'] = f"Backlog comprometido por semana ({b['year']})"
+    ws['A9'].font = Font(name=ARIAL, size=12, bold=True, color='1F3864')
+    hdrs = ['Semana', 'GP comprometido (acum.)', 'GP meta', 'Brecha', '% cobertura']
+    for c, h in enumerate(hdrs, 1):
+        cell = ws.cell(row=11, column=c, value=h)
+        cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = WRAPC; cell.border = BORDER
+    for i, p in enumerate(periods):
+        r = BL_DATA0 + i
+        dc = ws.cell(row=r, column=1, value=p); dc.font = F_FORM; dc.number_format = 'dd-mmm-yy'
+        bc = ws.cell(row=r, column=2); bc.font = F_INPUT; bc.number_format = USD  # GP comprometido (acum., entrada)
+        ws.cell(row=r, column=3, value='=$B$5').number_format = USD
+        ws.cell(row=r, column=4, value=f'=IF(B{r}="","",C{r}-B{r})').number_format = USD
+        ws.cell(row=r, column=5, value=f'=IF(B{r}="","",B{r}/C{r})').number_format = '0.0%'
+        for c in range(1, 6):
+            cell = ws.cell(row=r, column=c); cell.border = BORDER
+            if c in (3, 4, 5): cell.alignment = CENTER
+            if i % 2 == 1 and c != 2: cell.fill = FILL_GREY
+    ws.freeze_panes = f'A{BL_DATA0}'
+    for cl, wd in {'A': 12, 'B': 22, 'C': 14, 'D': 14, 'E': 12}.items():
+        ws.column_dimensions[cl].width = wd
+    ch = LineChart(); ch.title = f'Cobertura {b["year"]}: GP comprometido vs meta'; ch.style = 12
+    ch.height, ch.width = 8, 16
+    data = Reference(ws, min_col=2, max_col=3, min_row=11, max_row=last)
+    cats = Reference(ws, min_col=1, min_row=BL_DATA0, max_row=last)
+    ch.add_data(data, titles_from_data=True); ch.set_categories(cats)
+    ch.series[0].graphicalProperties.line.solidFill = '2E75B6'
+    ch.series[0].graphicalProperties.line.width = 28000
+    ch.series[1].graphicalProperties.line.solidFill = 'A6A6A6'
+    ch.series[1].graphicalProperties.line.dashStyle = 'dash'
+    ws.add_chart(ch, 'G4')
+    return last
+
+backlog_lasts = {b['tab']: build_backlog_tab(b) for b in BACKLOG_YEARS}
+
 # ---------- Dashboard ----------
 ws = dash
 ws.sheet_view.showGridLines = False
 F_SECT = Font(name=ARIAL, size=12, bold=True, color='1F3864')
 ws.merge_cells('A1:H1'); ws['A1'] = 'Tablero 4DX — GBM Nicaragua'; ws['A1'].font = Font(name=ARIAL, size=16, bold=True, color='1F3864')
-ws.merge_cells('A2:H2'); ws['A2'] = 'WIG de la compañía: Construir la utilidad neta (NAT) de Nicaragua — $1M en 2027, $2M (7%) en 2028'
+ws.merge_cells('A2:H2'); ws['A2'] = 'WIG de la compañía: Construir la utilidad neta (NAT) de Nicaragua — $1M en 2027, $2M (7%) en 2028, $2.4M (8%) en 2029'
 ws['A2'].font = Font(name=ARIAL, size=11, bold=True)
 
-# --- Trayectoria NAT 2026 → 2028 (contexto plurianual; NAT real = entrada anual) ---
-ws['A4'] = 'Trayectoria NAT 2026 → 2028'; ws['A4'].font = F_SECT
+# --- Trayectoria NAT 2026 → 2029 (contexto plurianual; NAT real = entrada anual) ---
+ws['A4'] = 'Trayectoria NAT 2026 → 2029'; ws['A4'].font = F_SECT
 traj_hdrs = ['Año', 'Ingreso', 'GP %', 'NAT meta', 'NAT %', 'NAT real', 'Estado']
 for c, h in enumerate(traj_hdrs, 1):
     cell = ws.cell(row=5, column=c, value=h)
     cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
 TRAJ = [('2026 (estimado)', 18656000, 0.144, 375000),
         ('2027 (meta)', 21000000, 0.16, 1000000),
-        ('2028 (meta)', 28571000, 0.164, 2000000)]
+        ('2028 (meta)', 28571000, 0.164, 2000000),
+        ('2029 (meta)', 30571000, 0.165, 2445680)]  # 2029: +$2M ventas vs 2028, NAT 8%
+TRAJ0 = 6
 for i, (yr, ing, gp, nat) in enumerate(TRAJ):
-    r = 6 + i
+    r = TRAJ0 + i
     ws.cell(row=r, column=1, value=yr).font = F_FORM
     ws.cell(row=r, column=2, value=ing).number_format = USD
     ws.cell(row=r, column=3, value=gp).number_format = PCT
@@ -327,22 +404,44 @@ for i, (yr, ing, gp, nat) in enumerate(TRAJ):
         cell = ws.cell(row=r, column=c); cell.border = BORDER
         if c != 6 and cell.font.color is None: cell.font = F_FORM
         if c in (3, 5, 7): cell.alignment = CENTER
-estado_cf(ws, 'G6:G8')
-ws.cell(row=9, column=1, value='El tope de impuesto mínimo (3% sobre ventas) fija el piso de impuestos; por eso la meta se gana en GP% y en mantener el costo local plano, no solo en crecer ventas.').font = Font(name=ARIAL, size=9, italic=True, color='808080')
+traj_last = TRAJ0 + len(TRAJ) - 1
+estado_cf(ws, f'G{TRAJ0}:G{traj_last}')
+ws.cell(row=10, column=1, value='El tope de impuesto mínimo (3% sobre ventas) fija el piso de impuestos; por eso la meta se gana en GP% y en mantener el costo local plano, no solo en crecer ventas.').font = Font(name=ARIAL, size=9, italic=True, color='808080')
+
+# --- Cobertura de backlog: GP ya comprometido vs meta del año (lee las páginas Backlog) ---
+ws['A12'] = 'Cobertura de backlog — GP comprometido vs meta del año'; ws['A12'].font = F_SECT
+bl_hdrs = ['Año', 'GP meta', 'GP comprometido', 'Brecha (falta vender)', '% cobertura']
+for c, h in enumerate(bl_hdrs, 1):
+    cell = ws.cell(row=13, column=c, value=h)
+    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = WRAPC; cell.border = BORDER
+for i, b in enumerate(BACKLOG_YEARS):
+    r = 14 + i
+    q = f"'{b['tab']}'"
+    ws.cell(row=r, column=1, value=int(b['year'])).font = F_FORM
+    ws.cell(row=r, column=2, value=f'={q}!$B$5').number_format = USD       # GP meta
+    ws.cell(row=r, column=3, value=f'={q}!$B$6').number_format = USD       # comprometido último
+    ws.cell(row=r, column=4, value=f'={q}!$B$7').number_format = USD       # brecha
+    ws.cell(row=r, column=5, value=f'={q}!$E$6').number_format = PCT       # % cobertura
+    for c in range(1, 6):
+        cell = ws.cell(row=r, column=c); cell.border = BORDER
+        if cell.font.color is None: cell.font = F_LINK if c >= 2 else F_FORM
+        if c in (1, 5): cell.alignment = CENTER
+        if i % 2 == 1: cell.fill = FILL_GREY
+bl_last = 14 + len(BACKLOG_YEARS) - 1
 
 # --- Seguimiento mensual NAT del año en curso ---
-ws['A11'] = 'Seguimiento mensual NAT — año en curso'; ws['A11'].font = F_SECT
-ws['A12'] = 'Meta anual NAT:'; ws['A12'].font = F_LBL
-ws['C12'] = 1000000; ws['C12'].font = F_INPUT; ws['C12'].number_format = USD; ws['C12'].fill = FILL_YEL
-DASH0 = 15
+ws['A18'] = 'Seguimiento mensual NAT — año en curso'; ws['A18'].font = F_SECT
+ws['A19'] = 'Meta anual NAT:'; ws['A19'].font = F_LBL
+ws['C19'] = 1000000; ws['C19'].font = F_INPUT; ws['C19'].number_format = USD; ws['C19'].fill = FILL_YEL
+DASH0 = 22
 hdrs = ['Mes', 'Meta mensual', 'NAT real', 'Meta acum.', 'Real acum.', '% avance', 'Estado']
 for c, h in enumerate(hdrs, 1):
-    cell = ws.cell(row=14, column=c, value=h)
+    cell = ws.cell(row=21, column=c, value=h)
     cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
 for i, m in enumerate(month_firsts(date(2027, 1, 1), 12)):
     r = DASH0 + i
     mc = ws.cell(row=r, column=1, value=m); mc.number_format = 'mmm-yy'; mc.font = F_FORM
-    ws.cell(row=r, column=2, value='=$C$12/12').number_format = USD
+    ws.cell(row=r, column=2, value='=$C$19/12').number_format = USD
     rc = ws.cell(row=r, column=3); rc.font = F_INPUT; rc.number_format = USD
     ws.cell(row=r, column=4, value=f'=SUM($B${DASH0}:B{r})').number_format = USD
     ws.cell(row=r, column=5, value=f'=SUM($C${DASH0}:C{r})').number_format = USD
@@ -357,15 +456,15 @@ last_dash = DASH0 + 11
 estado_cf(ws, f'G{DASH0}:G{last_dash}')
 ch = LineChart(); ch.title = 'NAT 2027 — Meta vs Real (acumulado)'; ch.style = 12
 ch.height, ch.width = 8, 14
-data = Reference(ws, min_col=4, max_col=5, min_row=14, max_row=last_dash)
+data = Reference(ws, min_col=4, max_col=5, min_row=21, max_row=last_dash)
 cats = Reference(ws, min_col=1, min_row=DASH0, max_row=last_dash)
 ch.add_data(data, titles_from_data=True); ch.set_categories(cats)
 ch.series[0].graphicalProperties.line.solidFill = 'A6A6A6'
 ch.series[0].graphicalProperties.line.dashStyle = 'dash'
 ch.series[1].graphicalProperties.line.solidFill = '2E75B6'
 ch.series[1].graphicalProperties.line.width = 28000
-ws.add_chart(ch, 'I11')
-R0 = 30
+ws.add_chart(ch, 'I18')
+R0 = 36
 ws.cell(row=R0 - 1, column=1, value='WIGs de soporte — estado al último dato ingresado').font = F_SECT
 hdrs = ['#', 'WIG de soporte', 'Dueño', 'Equipo', 'Meta', 'Último real', 'Estado', 'Ir a pestaña']
 for c, h in enumerate(hdrs, 1):

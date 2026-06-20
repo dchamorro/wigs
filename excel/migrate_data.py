@@ -76,8 +76,8 @@ def main(old_path, new_path, out_path):
     report = []
 
     for name in new.sheetnames:
-        if name in SKIP or name not in old.sheetnames:
-            if name not in old.sheetnames and name not in SKIP:
+        if name in SKIP or name.startswith('Backlog ') or name not in old.sheetnames:
+            if name not in old.sheetnames and name not in SKIP and not name.startswith('Backlog '):
                 report.append(f'  {name}: pestaña nueva, sin datos que migrar')
             continue
         o, n = old[name], new[name]
@@ -121,6 +121,35 @@ def main(old_path, new_path, out_path):
                     nc.cell(row=r, column=c, value=v)
             moved += 1
         report.append(f'  Compromisos: {moved} filas migradas')
+
+    # Backlog <año>: GP comprometido (col B) emparejado por fecha (col A, desde fila 12)
+    # y el GP% supuesto (E4) si el dueño lo personalizó.
+    for name in new.sheetnames:
+        if not name.startswith('Backlog ') or name not in old.sheetnames:
+            continue
+        o, n = old[name], new[name]
+
+        def amap(ws):
+            out, r = {}, 12
+            while ws.cell(row=r, column=1).value is not None:
+                v = ws.cell(row=r, column=1).value
+                out[v.date() if hasattr(v, 'date') else v] = r
+                r += 1
+            return out
+
+        om, nm = amap(o), amap(n)
+        moved = 0
+        for fecha, orow in om.items():
+            nrow = nm.get(fecha)
+            if nrow is None:
+                continue
+            v = o.cell(row=orow, column=2).value
+            if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                n.cell(row=nrow, column=2, value=v)
+                moved += 1
+        if isinstance(o['E4'].value, (int, float)):
+            n['E4'] = o['E4'].value  # GP% supuesto
+        report.append(f'  {name}: {moved} semanas migradas')
 
     # Dashboard NAT — se localiza por etiqueta (robusto ante cambios de fila)
     if 'Dashboard' in old.sheetnames:

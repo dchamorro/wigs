@@ -30,18 +30,23 @@ def wb():
 NO_WIG = ('Dashboard', 'Instrucciones', 'Compromisos')
 
 
+def is_support(name):
+    """No es una pestaña de WIG (Dashboard/Instrucciones/Compromisos o Backlog <año>)."""
+    return name in NO_WIG or name.startswith('Backlog ')
+
+
 def test_tabs_exist():
     names = wb().sheetnames
     assert names[0] == 'Dashboard'
     assert 'Instrucciones' in names
-    wig_tabs = [n for n in names if n not in NO_WIG]
+    wig_tabs = [n for n in names if not is_support(n)]
     assert len(wig_tabs) >= 1, 'Debe existir al menos una pestaña de WIG'
 
 
 def test_wig_tab_layout():
     book = wb()
     for name in book.sheetnames:
-        if name in NO_WIG:
+        if is_support(name):
             continue
         ws = book[name]
         # encabezado que el parser lee
@@ -88,11 +93,34 @@ def test_compromisos_layout():
 
 def test_dashboard_layout():
     ws = wb()['Dashboard']
-    # Seguimiento mensual NAT: meta anual en C12, meses desde fila 15, acum en col D
-    assert ws['C12'].value is not None, 'Dashboard: falta meta anual en C12'
-    assert ws.cell(row=15, column=1).value is not None, 'Dashboard: falta primer mes en A15'
-    f = ws.cell(row=15, column=4).value
-    assert isinstance(f, str) and f.startswith('='), 'Dashboard: D15 debe ser fórmula'
+    # Trayectoria NAT: 4 años desde fila 6 (2026–2029)
+    assert ws.cell(row=6, column=1).value and ws.cell(row=9, column=1).value, \
+        'Dashboard: la trayectoria debe tener 4 años (filas 6–9)'
+    # Cobertura de backlog: encabezado en fila 13, datos 14–16
+    assert ws.cell(row=13, column=1).value == 'Año', 'Dashboard: falta tabla de backlog (fila 13)'
+    f_bl = ws.cell(row=14, column=2).value
+    assert isinstance(f_bl, str) and f_bl.startswith('='), 'Dashboard: B14 debe referenciar la página Backlog'
+    # Seguimiento mensual NAT: meta anual en C19, meses desde fila 22, acum en col D
+    assert ws['C19'].value is not None, 'Dashboard: falta meta anual en C19'
+    assert ws.cell(row=22, column=1).value is not None, 'Dashboard: falta primer mes en A22'
+    f = ws.cell(row=22, column=4).value
+    assert isinstance(f, str) and f.startswith('='), 'Dashboard: D22 debe ser fórmula'
+
+
+def test_backlog_layout():
+    """Páginas Backlog <año>: meta de GP (B5 = Ingreso × GP%) y tabla semanal de
+    GP comprometido (col B, input) — el Dashboard las referencia por posición."""
+    book = wb()
+    bl = [n for n in book.sheetnames if n.startswith('Backlog ')]
+    assert len(bl) >= 1, 'Debe existir al menos una página Backlog'
+    for name in bl:
+        ws = book[name]
+        b5 = ws['B5'].value
+        assert isinstance(b5, str) and b5.startswith('='), f'{name}: B5 (GP meta) debe ser fórmula'
+        assert ws.cell(row=12, column=1).value is not None, f'{name}: falta primer semana en A12'
+        # col C de la tabla = referencia a la meta de GP
+        c = ws.cell(row=12, column=3).value
+        assert isinstance(c, str) and c.startswith('='), f'{name}: C12 (GP meta por fila) debe ser fórmula'
 
 
 def test_html_parser_matches():
@@ -100,7 +128,7 @@ def test_html_parser_matches():
     assert os.path.exists(HTML_PATH), f'falta {HTML_PATH}'
     html = open(HTML_PATH, encoding='utf-8').read()
     for anchor in ("g('B2')", "g('B4')", "g('B5')", "g('E10')", "g('B'+r)",
-                   "g('C12')", "encode_col(8+2*k)", "'Compromisos'"):
+                   "g('C19')", "encode_col(8+2*k)", "'Compromisos'"):
         assert anchor in html, f'parser: ancla {anchor} no encontrada — contrato roto'
     assert "const CONFIG = { DATA_URL: ''" in html, (
         'falta la línea CONFIG exacta — el workflow de Azure parchea esa cadena literal')
@@ -109,7 +137,7 @@ def test_html_parser_matches():
 def test_recalculated():
     """SheetJS lee valores cacheados: el workbook publicado debe estar recalculado."""
     book = load_workbook(WB_PATH, data_only=True)
-    name = [n for n in book.sheetnames if n not in NO_WIG][0]
+    name = [n for n in book.sheetnames if not is_support(n)][0]
     ws = book[name]
     v = ws.cell(row=DATA0, column=3).value  # Meta: fórmula en tabs acum, constante en nivel
     assert v is not None, ('Sin valores cacheados: ejecutar python3 scripts/recalc.py ' + WB_PATH)
