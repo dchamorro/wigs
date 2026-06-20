@@ -10,7 +10,10 @@ Copia (solo celdas de entrada, nunca fórmulas):
     metas de leads (fila 9), columna Real del lag (D) y columnas Real de
     cada lead — emparejando filas por la FECHA de la columna B, de modo
     que un cambio en el rango de periodos no desalinee los datos.
-  - Dashboard: meta anual (C4) y NAT real (C7:C18) emparejado por mes.
+  - Dashboard: meta anual NAT, NAT real mensual (emparejado por mes) y NAT
+    real anual de la trayectoria (emparejado por año). Se localizan por
+    etiqueta, así sirve aunque viejo y nuevo tengan el Dashboard en filas
+    distintas (p. ej. la reestructuración a 12 WIGs movió el bloque mensual).
 
 Después de migrar, recalcular:  python3 scripts/recalc.py SALIDA.xlsx
 """
@@ -28,6 +31,39 @@ def date_map(ws):
     r = DATA0
     while ws.cell(row=r, column=2).value is not None:
         v = ws.cell(row=r, column=2).value
+        key = v.date() if hasattr(v, 'date') else v
+        out[key] = r
+        r += 1
+    return out
+
+
+def _find_annual_nat(ws):
+    """Devuelve (fila, col) de la celda de meta anual NAT (a 2 columnas a la
+    derecha de la etiqueta 'Meta anual NAT:'), o None si no está."""
+    for r in range(1, 60):
+        v = ws.cell(row=r, column=1).value
+        if isinstance(v, str) and v.strip().startswith('Meta anual NAT'):
+            return (r, 3)
+    return None
+
+
+def _find_key_rows(ws, header):
+    """Localiza el encabezado `header` en la columna A y devuelve {clave: fila}
+    para las filas de datos debajo, hasta la primera fila sin etiqueta en A.
+    Sirve para los bloques 'Mes' (mensual NAT) y 'Año' (trayectoria)."""
+    hdr = None
+    for r in range(1, 60):
+        v = ws.cell(row=r, column=1).value
+        if isinstance(v, str) and v.strip() == header:
+            hdr = r
+            break
+    if hdr is None:
+        return {}
+    out, r = {}, hdr + 1
+    while True:
+        v = ws.cell(row=r, column=1).value
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            break
         key = v.date() if hasattr(v, 'date') else v
         out[key] = r
         r += 1
@@ -86,19 +122,29 @@ def main(old_path, new_path, out_path):
             moved += 1
         report.append(f'  Compromisos: {moved} filas migradas')
 
-    # Dashboard NAT
+    # Dashboard NAT — se localiza por etiqueta (robusto ante cambios de fila)
     if 'Dashboard' in old.sheetnames:
         od, nd = old['Dashboard'], new['Dashboard']
-        if od['C4'].value is not None:
-            nd['C4'] = od['C4'].value
-        omeses = {od.cell(row=r, column=1).value: r for r in range(7, 19)}
-        for r in range(7, 19):
-            mes = nd.cell(row=r, column=1).value
-            orow = omeses.get(mes)
-            if orow:
+        # meta anual NAT: celda a la derecha de la etiqueta 'Meta anual NAT:'
+        oa, na = _find_annual_nat(od), _find_annual_nat(nd)
+        if oa is not None and na is not None and od.cell(row=oa[0], column=oa[1]).value is not None:
+            nd.cell(row=na[0], column=na[1], value=od.cell(row=oa[0], column=oa[1]).value)
+        # NAT real mensual (col C bajo el encabezado 'Mes'), emparejado por mes
+        omeses, nmeses = _find_key_rows(od, 'Mes'), _find_key_rows(nd, 'Mes')
+        for mes, orow in omeses.items():
+            nrow = nmeses.get(mes)
+            if nrow:
                 v = od.cell(row=orow, column=3).value
-                if v is not None:
-                    nd.cell(row=r, column=3, value=v)
+                if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                    nd.cell(row=nrow, column=3, value=v)
+        # NAT real anual de la trayectoria (col F bajo el encabezado 'Año'), por año
+        oyrs, nyrs = _find_key_rows(od, 'Año'), _find_key_rows(nd, 'Año')
+        for yr, orow in oyrs.items():
+            nrow = nyrs.get(yr)
+            if nrow:
+                v = od.cell(row=orow, column=6).value
+                if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                    nd.cell(row=nrow, column=6, value=v)
         report.append('  Dashboard: NAT migrado')
 
     new.save(out_path)

@@ -88,10 +88,11 @@ def test_compromisos_layout():
 
 def test_dashboard_layout():
     ws = wb()['Dashboard']
-    assert ws['C4'].value is not None, 'Dashboard: falta meta anual en C4'
-    assert ws.cell(row=7, column=1).value is not None, 'Dashboard: falta primer mes en A7'
-    f = ws.cell(row=7, column=4).value
-    assert isinstance(f, str) and f.startswith('='), 'Dashboard: D7 debe ser fórmula'
+    # Seguimiento mensual NAT: meta anual en C12, meses desde fila 15, acum en col D
+    assert ws['C12'].value is not None, 'Dashboard: falta meta anual en C12'
+    assert ws.cell(row=15, column=1).value is not None, 'Dashboard: falta primer mes en A15'
+    f = ws.cell(row=15, column=4).value
+    assert isinstance(f, str) and f.startswith('='), 'Dashboard: D15 debe ser fórmula'
 
 
 def test_html_parser_matches():
@@ -99,7 +100,7 @@ def test_html_parser_matches():
     assert os.path.exists(HTML_PATH), f'falta {HTML_PATH}'
     html = open(HTML_PATH, encoding='utf-8').read()
     for anchor in ("g('B2')", "g('B4')", "g('B5')", "g('E10')", "g('B'+r)",
-                   "g('C4')", "encode_col(8+2*k)", "'Compromisos'"):
+                   "g('C12')", "encode_col(8+2*k)", "'Compromisos'"):
         assert anchor in html, f'parser: ancla {anchor} no encontrada — contrato roto'
     assert "const CONFIG = { DATA_URL: ''" in html, (
         'falta la línea CONFIG exacta — el workflow de Azure parchea esa cadena literal')

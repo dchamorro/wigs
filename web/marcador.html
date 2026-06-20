@@ -257,7 +257,7 @@ function applyTheme(t){
   $('#btnTheme')&&($('#btnTheme').textContent=t==='light'?'◑ Oscuro':'◐ Claro');
   if(slides.length&&slides[idx]){const cv=slides[idx].el.querySelector('canvas');if(cv)drawChart(cv,slides[idx].w);}
 }
-const LOWER_BETTER=t=>/expired/i.test(t);          // WIGs where less is better
+const LOWER_BETTER=t=>/expired|apalanca|costos? local/i.test(t);   // WIGs "menos es mejor" (detección por nombre/título)
 const fmtMoney=v=>'$'+Math.round(v).toLocaleString('en-US');
 const fmtNum=v=>Math.abs(v)>=1000?Math.round(v).toLocaleString('en-US'):(+v).toLocaleString('en-US',{maximumFractionDigits:1});
 const fmtPct=v=>(v*100).toLocaleString('en-US',{maximumFractionDigits:1})+'%';
@@ -295,13 +295,14 @@ function parseWorkbook(wb){
   if(d){
     const g=a=>{const c=d[a];return c?c.v:null};
     const rows=[];
-    for(let r=7;r<=18;r++){
-      rows.push({label:MESES[r-7]+'-27', meta:num(g('B'+r)), real:num(g('C'+r)),
+    // Seguimiento mensual NAT: encabezados en fila 14, datos meses 15–26 (año en curso)
+    for(let r=15;r<=26;r++){
+      rows.push({label:MESES[r-15]+'-27', meta:num(g('B'+r)), real:num(g('C'+r)),
         metaA:num(g('D'+r)), realA:num(g('E'+r)), pct:num(g('F'+r)), estado:g('G'+r)});
     }
     out.push({company:true, title:'Generar $1,000,000 de utilidad neta (NAT) en 2027',
       lag:'Utilidad neta después de impuestos, acumulada mensual vs plan.',
-      duenio:'Gerencia General', equipo:'Toda la compañía', meta:num(g('C4'))||1e6,
+      duenio:'Gerencia General', equipo:'Toda la compañía', meta:num(g('C12'))||1e6,
       acum:true, fmt:fmtMoney, lowerBetter:false, rows, leads:null});
   }
   wb.SheetNames.filter(n=>!SKIP.includes(n)).forEach((name,pos)=>{

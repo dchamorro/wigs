@@ -1,8 +1,8 @@
 # Marcador WIG 4DX — GBM Nicaragua
 
 Sistema de scoreboards 4DX (4 Disciplinas de Ejecución). WIG de compañía:
-$1M de utilidad neta después de impuestos (NAT) en 2027, soportado por 9 WIGs
-con lead measures semanales/mensuales.
+$1M de utilidad neta después de impuestos (NAT) en 2027 ($2M en 2028),
+soportado por 12 WIGs con lead measures semanales/mensuales.
 
 ## Arquitectura
 
@@ -26,7 +26,8 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
   funciona offline). CONFIG al inicio del script: `DATA_URL` (vacío = drag-drop)
   y `REFRESH_MIN`. Tema claro/oscuro (botón ◐ o tecla T, persiste en
   localStorage). Tocar/clicar un lead abre su detalle (historia del indicador
-  + compromisos de la pestaña Compromisos); apto para pantallas táctiles.
+  + compromisos, si el tablero trae la pestaña Compromisos opcional); apto para
+  pantallas táctiles.
 - `deploy/setup-wig.sh` — instala Samba + nginx + timer de publicación en el PGX.
 - `.github/workflows/azure-static-web-apps.yml` — publica marcador.html +
   `web/tablero.xlsx` a Azure Static Web Apps en cada push a main que toque
@@ -42,8 +43,10 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
 cambio estructural en `build_wig.py` debe reflejarse en el parser y en
 `tests/test_contract.py`, en el mismo commit.
 
-Pestañas: `Dashboard` (primera), pestañas de WIG, `Compromisos` (tabla plana
-que alimenta el detalle de cada lead en el TV) e `Instrucciones` (ignorada).
+Pestañas: `Dashboard` (primera), 12 pestañas de WIG (`1. …` … `12. …`) e
+`Instrucciones` (ignorada). `Compromisos` ya **no se genera** (se quitó en la
+reestructuración a 12 WIGs), pero el parser conserva soporte **opcional**: si
+un tablero viejo la trae, alimenta el detalle de cada lead en el TV.
 
 Por pestaña de WIG:
 | Celda/Col | Contenido |
@@ -57,17 +60,24 @@ Por pestaña de WIG:
 | Fila 9, misma col | Meta del lead |
 | Filas 11+ | B fecha · C meta · D real (input) · E/F acumulados · G % · H estado · I+2k real lead · J+2k % lead |
 
-Dashboard: C4 meta anual NAT · filas 7–18: A mes, B meta, C real (input),
-D/E acumulados, F %, G estado.
+Dashboard (dos bloques + tabla de soporte):
+- Trayectoria NAT 2026→2028: encabezados fila 5, datos filas 6–8
+  (A año · B ingreso · C GP% · D NAT meta · E NAT% · F NAT real input · G estado).
+- Seguimiento mensual NAT del año en curso: **C12 meta anual NAT** · encabezados
+  fila 14 · filas 15–26: A mes, B meta, C real (input), D/E acumulados, F %,
+  G estado. **El parser del TV lee este bloque (C12 + filas 15–26).**
+- WIGs de soporte: encabezados fila 30, una fila por WIG (31–42).
 
-Compromisos (encabezados fijos en fila 1, datos desde fila 2):
-`Semana | WIG | Lead | Compromiso | Responsable | Estado` — WIG = 1–9 (número
-de pestaña), Lead = 1–8, Estado = `Pendiente`/`Hecho`. El parser la lee por
-posición A–F y es opcional (sin pestaña = sin compromisos en el detalle).
+Compromisos (legado/opcional; el build ya no la genera). Si existe: encabezados
+fijos en fila 1, datos desde fila 2: `Semana | WIG | Lead | Compromiso |
+Responsable | Estado` — WIG = número de pestaña, Lead = 1–8, Estado =
+`Pendiente`/`Hecho`. El parser la lee por posición A–F y es opcional.
 
 Reglas duras:
 - DATA0 = fila 11. MAX_LEADS = 8. No cambiar sin tocar parser + tests + migrate.
-- WIGs "menos es mejor": el parser los detecta por `/expired/i` en nombre/título.
+- WIGs "menos es mejor": el parser los detecta por nombre/título con el regex
+  `LOWER_BETTER` (`/expired|apalanca|costos? local/i`). Al agregar un WIG de
+  nivel donde menos = mejor (status Excel `D<=C`), ampliar ese regex.
 - Los leads se definen en positivo (más = mejor) para que el % sea comparable.
 - L1–L2 son la "apuesta principal" (resaltados en el TV); L3–L8 son de apoyo.
 - Estados: En meta ≥95% · Riesgo 80–95% · Atrasado <80% (texto exacto, el
