@@ -30,9 +30,14 @@ def wb():
 NO_WIG = ('Dashboard', 'Instrucciones', 'Compromisos')
 
 
+def is_year_page(name):
+    """Pestaña por año: '2027'/'2028'/'2029' (o el legado 'Backlog <año>')."""
+    return bool(re.match(r'^\d{4}$', name)) or name.startswith('Backlog ')
+
+
 def is_support(name):
-    """No es una pestaña de WIG (Dashboard/Instrucciones/Compromisos o Backlog <año>)."""
-    return name in NO_WIG or name.startswith('Backlog ')
+    """No es una pestaña de WIG (Dashboard/Instrucciones/Compromisos o página por año)."""
+    return name in NO_WIG or is_year_page(name)
 
 
 def test_tabs_exist():
@@ -107,14 +112,16 @@ def test_dashboard_layout():
     assert isinstance(f, str) and f.startswith('='), 'Dashboard: D22 debe ser fórmula'
 
 
-def test_backlog_layout():
-    """Páginas Backlog <año>: meta de GP (B5 = Ingreso × GP%) y tabla semanal de
-    GP comprometido (col B, input) — el Dashboard las referencia por posición."""
+def test_year_pages_layout():
+    """Páginas por año (2027/2028/2029): meta NAT (E5), meta de GP (B5 = Ingreso ×
+    GP%) y tabla semanal de GP comprometido (col B, input) — el Dashboard las
+    referencia por posición (B5/B6/B7/E6)."""
     book = wb()
-    bl = [n for n in book.sheetnames if n.startswith('Backlog ')]
-    assert len(bl) >= 1, 'Debe existir al menos una página Backlog'
-    for name in bl:
+    yp = [n for n in book.sheetnames if is_year_page(n)]
+    assert len(yp) >= 1, 'Debe existir al menos una página por año'
+    for name in yp:
         ws = book[name]
+        assert ws['E5'].value is not None, f'{name}: falta la meta NAT en E5'
         b5 = ws['B5'].value
         assert isinstance(b5, str) and b5.startswith('='), f'{name}: B5 (GP meta) debe ser fórmula'
         assert ws.cell(row=12, column=1).value is not None, f'{name}: falta primer semana en A12'

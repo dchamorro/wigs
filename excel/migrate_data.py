@@ -17,12 +17,18 @@ Copia (solo celdas de entrada, nunca fórmulas):
 
 Después de migrar, recalcular:  python3 scripts/recalc.py SALIDA.xlsx
 """
+import re
 import sys
 from openpyxl import load_workbook
 
 DATA0 = 11
 MAX_LEADS = 8
 SKIP = {'Dashboard', 'Instrucciones', 'Compromisos'}
+
+
+def is_year_page(name):
+    """Pestaña por año: '2027'/'2028'/'2029' (o el legado 'Backlog <año>')."""
+    return bool(re.match(r'^\d{4}$', name)) or name.startswith('Backlog ')
 
 
 def date_map(ws):
@@ -76,8 +82,8 @@ def main(old_path, new_path, out_path):
     report = []
 
     for name in new.sheetnames:
-        if name in SKIP or name.startswith('Backlog ') or name not in old.sheetnames:
-            if name not in old.sheetnames and name not in SKIP and not name.startswith('Backlog '):
+        if name in SKIP or is_year_page(name) or name not in old.sheetnames:
+            if name not in old.sheetnames and name not in SKIP and not is_year_page(name):
                 report.append(f'  {name}: pestaña nueva, sin datos que migrar')
             continue
         o, n = old[name], new[name]
@@ -122,10 +128,10 @@ def main(old_path, new_path, out_path):
             moved += 1
         report.append(f'  Compromisos: {moved} filas migradas')
 
-    # Backlog <año>: GP comprometido (col B) emparejado por fecha (col A, desde fila 12)
-    # y el GP% supuesto (E4) si el dueño lo personalizó.
+    # Páginas por año (2027/2028/2029): GP comprometido (col B) emparejado por
+    # fecha (col A, desde fila 12) y el GP% supuesto (E4) si el dueño lo cambió.
     for name in new.sheetnames:
-        if not name.startswith('Backlog ') or name not in old.sheetnames:
+        if not is_year_page(name) or name not in old.sheetnames:
             continue
         o, n = old[name], new[name]
 

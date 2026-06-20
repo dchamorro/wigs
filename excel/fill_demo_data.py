@@ -51,9 +51,9 @@ def main(inp, out):
         d.cell(row=22+i,column=3,value=v)
     # Backlog: GP comprometido acumulado por semana (col B, desde fila 12) — demo
     BL_DEMO = {
-        'Backlog 2027': [2000000,2150000,2300000,2450000,2600000],
-        'Backlog 2028': [1600000,1900000,2150000,2350000,2500000],
-        'Backlog 2029': [700000,950000,1150000,1350000,1550000],
+        '2027': [2000000,2150000,2300000,2450000,2600000],
+        '2028': [1600000,1900000,2150000,2350000,2500000],
+        '2029': [700000,950000,1150000,1350000,1550000],
     }
     for tab,vals in BL_DEMO.items():
         if tab not in wb.sheetnames: continue

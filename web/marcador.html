@@ -255,7 +255,7 @@ const CONFIG = { DATA_URL: '', REFRESH_MIN: 10, IDLE_SEC: 75 };
 /* ================================================================ */
 const $=s=>document.querySelector(s);
 const SKIP=['Dashboard','Instrucciones','Compromisos'];
-const isSkip=n=>SKIP.includes(n)||/^Backlog /.test(n);   // las páginas Backlog no son slides de WIG
+const isSkip=n=>SKIP.includes(n)||/^Backlog /.test(n)||/^\d{4}$/.test(n);   // Dashboard/Instrucciones/Compromisos y páginas por año (2027/2028/2029) no son slides de WIG
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 /* tema claro/oscuro (persistente; T o botón para alternar) */

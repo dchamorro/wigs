@@ -47,10 +47,11 @@ cambio estructural en `build_wig.py` debe reflejarse en el parser y en
 `tests/test_contract.py`, en el mismo commit.
 
 Pestañas: `Dashboard` (primera), 12 pestañas de WIG (`1. …` … `12. …`), 3
-páginas de backlog (`Backlog 2027/2028/2029`) e `Instrucciones` (ignorada). El
-parser **omite** Dashboard, Instrucciones, Compromisos y todo lo que empiece
-con `Backlog ` (no son slides de WIG). `Compromisos` ya **no se genera** pero
-el parser conserva soporte **opcional** para tableros viejos que la traigan.
+páginas por año (`2027`/`2028`/`2029`) e `Instrucciones` (ignorada). El parser
+**omite** Dashboard, Instrucciones, Compromisos, las páginas por año (nombre de
+4 dígitos, o el legado `Backlog <año>`) — no son slides de WIG. `Compromisos`
+ya **no se genera** pero el parser conserva soporte **opcional** para tableros
+viejos que la traigan.
 
 Por pestaña de WIG:
 | Celda/Col | Contenido |
@@ -64,23 +65,27 @@ Por pestaña de WIG:
 | Fila 9, misma col | Meta del lead |
 | Filas 11+ | B fecha · C meta · D real (input) · E/F acumulados · G % · H estado · I+2k real lead · J+2k % lead |
 
-Dashboard (cuatro bloques + tabla de soporte):
-- Trayectoria NAT 2026→2029: encabezados fila 5, datos filas 6–9
-  (A año · B ingreso · C GP% · D NAT meta · E NAT% · F NAT real input · G estado).
-  **El parser del TV lee estas 4 filas** (año + NAT meta col D + NAT real col F).
+Dashboard (cuatro bloques + tabla de soporte). Es la **página principal**: arriba
+las metas de utilidad neta (NAT) de los 3 años con enlace a cada pestaña de año.
+- Metas de Utilidad Neta (NAT) 2027→2029 (base 2026): encabezados fila 5, datos
+  filas 6–9 (A año · B ingreso · C GP% · D **Meta NAT** · E NAT% · F NAT real
+  input · G estado · H enlace a la pestaña del año). **El parser del TV lee estas
+  4 filas** (año + Meta NAT col D + NAT real col F).
 - Cobertura de backlog: encabezados fila 13, datos filas 14–16 (un año por fila)
   (A año · B GP meta · C GP comprometido · D brecha · E % cobertura) — fórmulas
-  que referencian las páginas `Backlog <año>`. **El parser del TV lee 14–16.**
+  que referencian las páginas por año. **El parser del TV lee 14–16.**
 - Seguimiento mensual NAT del año en curso: **C19 meta anual NAT** · encabezados
   fila 21 · filas 22–33: A mes, B meta, C real (input), D/E acumulados, F %,
   G estado. **El parser del TV lee este bloque (C19 + filas 22–33).**
 - WIGs de soporte: encabezados fila 36, una fila por WIG (37–48).
 
-Páginas `Backlog <año>` (contratos ya conocidos que operarán ese año):
+Páginas por año `2027`/`2028`/`2029` (encabezan con la meta de utilidad neta):
 | Celda/Col | Contenido |
 |---|---|
+| A1 | Título `<año> — Meta de Utilidad Neta (NAT)` |
 | B4 / E4 | Ingreso meta / GP meta % (E4 editable si es supuesto, p. ej. 2029) |
 | B5 | **GP meta = Ingreso × GP%** (`=B4*E4`) — lo que la cobertura referencia |
+| E5 / E7 | **Meta NAT** (utilidad neta del año) / Margen NAT (NAT/Ingreso) |
 | B6 / E6 / B7 | GP comprometido (último) / % cobertura / brecha |
 | Filas 12+ | A semana · B GP comprometido acum. (input) · C GP meta · D brecha · E % |
 El Dashboard las lee por posición fija (B5/B6/B7/E6); migrate copia la col B por fecha.
