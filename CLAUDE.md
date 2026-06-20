@@ -32,9 +32,12 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
 - `.github/workflows/azure-static-web-apps.yml` — publica marcador.html +
   `web/tablero.xlsx` a Azure Static Web Apps en cada push a main que toque
   `web/`. Parcha `DATA_URL: 'tablero.xlsx'` al deployar (misma convención
-  que el PGX; el fuente queda con DATA_URL vacío). El sitio está restringido
-  por IP a la oficina (tier Standard). Los datos se suben con
-  `make publicar DATOS=...` (valida contrato + recalc antes de pushear).
+  que el PGX; el fuente queda con DATA_URL vacío). El sitio exige **login de
+  empresa** (Entra ID de un solo tenant; solo cuentas @caobagroup.com) vía
+  `web/staticwebapp.config.json` (tier Standard). La TV de la oficina NO usa
+  este sitio: lee del PGX por LAN sin login; Azure es la copia para acceso
+  remoto autenticado. Setup en el portal (una vez): `docs/AZURE_LOGIN.md`.
+  Los datos se suben con `make publicar DATOS=...` (valida contrato + recalc).
 - `tests/test_contract.py` — valida el contrato Excel↔parser (ver abajo).
 
 ## EL CONTRATO Excel ↔ parser (no romper)

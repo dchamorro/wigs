@@ -82,6 +82,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .wigtitle{font-family:'Saira Condensed';font-weight:800;font-size:4.4vh;line-height:1.04;text-transform:none;max-width:62vw}
 .meta-line{margin-top:.8vh;color:var(--dim);font-size:1.9vh}
 .meta-line b{color:var(--ink);font-weight:600}
+/* tira de trayectoria NAT (slide de compañía) */
+.trajstrip .trajcap{grid-column:1/-1;font-weight:700;font-size:2vh;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:-.4vh}
+.trajbody{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5vh;height:100%}
+.trajmeta{font-weight:800;font-size:5vh;line-height:1;color:var(--ink)}
+.trajreal{font-size:2vh;color:var(--dim)}
 .verdict{margin-left:auto;text-align:right;flex:none}
 .verdict .chip{display:inline-block;font-family:'Saira Condensed';font-weight:800;font-size:3.6vh;letter-spacing:.1em;padding:.6vh 1.4vw;border-radius:.8vh;text-transform:uppercase}
 .chip.win{color:var(--win);background:var(--win-bg);border:1px solid var(--win)}
@@ -300,10 +305,16 @@ function parseWorkbook(wb){
       rows.push({label:MESES[r-15]+'-27', meta:num(g('B'+r)), real:num(g('C'+r)),
         metaA:num(g('D'+r)), realA:num(g('E'+r)), pct:num(g('F'+r)), estado:g('G'+r)});
     }
+    // Trayectoria plurianual (Dashboard filas 6–8): año · NAT meta (col D) · NAT real (col F)
+    const traj=[];
+    for(let r=6;r<=8;r++){
+      const yr=g('A'+r); if(yr==null||String(yr).trim()==='') continue;
+      traj.push({year:String(yr), natMeta:num(g('D'+r)), natReal:num(g('F'+r))});
+    }
     out.push({company:true, title:'Generar $1,000,000 de utilidad neta (NAT) en 2027',
       lag:'Utilidad neta después de impuestos, acumulada mensual vs plan.',
       duenio:'Gerencia General', equipo:'Toda la compañía', meta:num(g('C12'))||1e6,
-      acum:true, fmt:fmtMoney, lowerBetter:false, rows, leads:null});
+      acum:true, fmt:fmtMoney, lowerBetter:false, rows, leads:null, traj});
   }
   wb.SheetNames.filter(n=>!SKIP.includes(n)).forEach((name,pos)=>{
     const s=wb.Sheets[name];
@@ -526,6 +537,20 @@ function buildSlides(wigs){
         </div>`;
       }).join('');
       leadsHtml=`<div class="leads cols${Math.min(4,Math.max(3,Math.ceil(w.leads.length/2)))}">${tiles}</div>`;
+    }
+    // slide de compañía: tira de trayectoria NAT 2026 → 2028 (en vez de leads)
+    if(w.company&&w.traj&&w.traj.length){
+      const tiles=w.traj.map(t=>{
+        const cur=/2027/.test(t.year);
+        return `<div class="lead${cur?' main':''}">
+          <div class="tag">${esc(t.year)}${cur?' · EN CURSO':''}</div>
+          <div class="vizbody trajbody">
+            <div class="trajmeta cond">${t.natMeta!=null?fmtMoney(t.natMeta):'—'}</div>
+            <div class="trajreal">Real: ${t.natReal!=null?fmtMoney(t.natReal):'—'}</div>
+          </div>
+        </div>`;
+      }).join('');
+      leadsHtml=`<div class="leads cols3 trajstrip"><div class="trajcap cond">Trayectoria NAT 2026 → 2028</div>${tiles}</div>`;
     }
     el.innerHTML=`
       <div class="head">
