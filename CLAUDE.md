@@ -47,11 +47,13 @@ cambio estructural en `build_wig.py` debe reflejarse en el parser y en
 `tests/test_contract.py`, en el mismo commit.
 
 Pestañas: `Dashboard` (primera), 12 pestañas de WIG (`1. …` … `12. …`), 3
-páginas por año (`2027`/`2028`/`2029`) e `Instrucciones` (ignorada). El parser
-**omite** Dashboard, Instrucciones, Compromisos, las páginas por año (nombre de
-4 dígitos, o el legado `Backlog <año>`) — no son slides de WIG. `Compromisos`
-ya **no se genera** pero el parser conserva soporte **opcional** para tableros
-viejos que la traigan.
+páginas por año (`2027`/`2028`/`2029`) e `Instrucciones` (ignorada). Las páginas
+por año (nombre de 4 dígitos, o el legado `Backlog <año>`) **no** son slides de
+WIG, pero el TV **sí** genera un slide propio por año (meta NAT + cobertura de
+backlog), leyendo B4/E4/B5/E5/B6/E6/B7/E7 y la tabla semanal (A/B/C desde fila
+12). El orden de slides es: Compañía → 2027 → 2028 → 2029 → los 12 WIGs.
+`Compromisos` ya **no se genera** pero el parser conserva soporte **opcional**
+para tableros viejos que la traigan.
 
 Por pestaña de WIG:
 | Celda/Col | Contenido |

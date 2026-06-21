@@ -327,6 +327,21 @@ function parseWorkbook(wb){
       duenio:'Gerencia General', equipo:'Toda la compañía', meta:num(g('C19'))||1e6,
       acum:true, fmt:fmtMoney, lowerBetter:false, rows, leads:null, traj});
   }
+  // un slide por año (2027/2028/2029): meta de utilidad neta (NAT) + cobertura de backlog de GP
+  wb.SheetNames.filter(n=>/^\d{4}$/.test(n)).forEach(name=>{
+    const s=wb.Sheets[name]; const g=a=>{const c=s[a];return c?c.v:null};
+    const rows=[];
+    for(let r=12;r<400;r++){
+      const f=g('A'+r); if(f==null) break;
+      const comp=num(g('B'+r)), gpm=num(g('C'+r));    // B = GP comprometido (acum.), C = GP meta (plano)
+      rows.push({label:fmtDate(typeof f==='number'?xlDate(f):new Date(f)),
+        metaA:gpm, realA:comp, meta:gpm, real:comp});
+    }
+    out.push({yearPage:true, company:false, year:name,
+      ingreso:num(g('B4')), gpPct:num(g('E4')), gpMeta:num(g('B5')), natMeta:num(g('E5')),
+      comprometido:num(g('B6')), cobertura:num(g('E6')), brecha:num(g('B7')), natPct:num(g('E7')),
+      acum:true, fmt:fmtMoney, lowerBetter:false, neutralFill:true, rows, leads:null});
+  });
   wb.SheetNames.filter(n=>!isSkip(n)).forEach((name,pos)=>{
     const s=wb.Sheets[name];
     const g=a=>{const c=s[a];return c?c.v:null};
@@ -433,7 +448,7 @@ function drawChart(cv,w){
     for(let i=1;i<=li;i++){
       if(realS[i-1]==null||realS[i]==null||metaS[i]==null)continue;
       const above=w.lowerBetter? (realS[i]<=metaS[i]) : (realS[i]>=metaS[i]);
-      ctx.fillStyle=above?C.fwin:C.flose;
+      ctx.fillStyle=w.neutralFill?C.faint:(above?C.fwin:C.flose);   // años: la brecha es neutra, no "atrasado"
       ctx.beginPath();
       ctx.moveTo(X(i-1),Y(realS[i-1]));ctx.lineTo(X(i),Y(realS[i]));
       ctx.lineTo(X(i),Y(metaS[i]));ctx.lineTo(X(i-1),Y(metaS[i-1]));ctx.closePath();ctx.fill();
@@ -522,13 +537,51 @@ function vizBig(w,k,cur){
 const VIZ=[vizBars,vizBullet,vizBig,vizSpark,vizGauge];
 function vizFor(k){ if(k===0)return vizGauge; if(k===1)return vizSpark; return VIZ[(k-2)%VIZ.length]; }
 
+/* slide por año: meta de utilidad neta (NAT) del año + cobertura de backlog de GP */
+function yearSlideHTML(w){
+  const money=v=>v!=null?fmtMoney(v):'—';
+  const cob=w.cobertura!=null?fmtPct(w.cobertura):'—';
+  const li=lastDataIndex(w.rows);
+  const asof=li>=0?('Backlog al: '+w.rows[li].label):'Backlog aún sin ingresar';
+  const tiles=[
+    ['Ingreso meta', money(w.ingreso)],
+    ['GP meta (Ingreso × GP%)', money(w.gpMeta)],
+    ['GP comprometido (backlog)', money(w.comprometido)],
+    ['Brecha — falta vender', money(w.brecha)],
+  ].map(([l,val])=>`<div class="lead"><div class="tag">${esc(l)}</div><div class="vizbody trajbody"><div class="trajmeta cond">${val}</div></div></div>`).join('');
+  return `
+    <div class="head">
+      <div>
+        <div class="eyebrow cond">META DE UTILIDAD NETA · AÑO ${esc(w.year)}</div>
+        <div class="wigtitle cond">${esc(w.year)} — Meta de Utilidad Neta (NAT)</div>
+        <div class="meta-line">Ingreso meta: <b>${money(w.ingreso)}</b> · GP meta %: <b>${w.gpPct!=null?fmtPct(w.gpPct):'—'}</b> · Margen NAT: <b>${w.natPct!=null?fmtPct(w.natPct):'—'}</b></div>
+      </div>
+      <div class="verdict">
+        <div class="chip plain cond">${cob} CUBIERTO</div>
+        <div class="asof">${asof}</div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="scorecol">
+        <div class="bignum"><div class="lbl">Meta de Utilidad Neta (NAT) ${esc(w.year)}</div><div class="val cond plain">${money(w.natMeta)}</div><div class="sub">Margen NAT ${w.natPct!=null?fmtPct(w.natPct):'—'}</div></div>
+        <div class="bignum"><div class="lbl">Cobertura de backlog (GP comprometido)</div><div class="val cond plain">${cob}</div><div class="sub">Comprometido ${money(w.comprometido)} · falta ${money(w.brecha)}</div></div>
+      </div>
+      <div class="chartwrap"><div class="lbl">Backlog de GP · comprometido vs meta <span class="legend"><span><i class="meta"></i>Meta GP</span><span><i></i>Comprometido</span></span></div><canvas></canvas></div>
+    </div>
+    <div class="leads cols4 trajstrip">${tiles}</div>`;
+}
+
 function buildSlides(wigs){
   const stage=$('#stage'); stage.innerHTML=''; $('#dots').innerHTML='';
+  const wigList=wigs.filter(x=>!x.company&&!x.yearPage);   // numeración de WIGs (excluye compañía y años)
   slides=wigs.map((w,i)=>{
     const v=verdictOf(w);
     const li=v.li, r=li>=0?w.rows[li]:null;
     const el=document.createElement('div'); el.className='slide';
-    const eyebrow=w.company?'WIG DE LA COMPAÑÍA':`WIG DE SOPORTE ${i} DE ${wigs.length-1}`;
+    if(w.yearPage){ el.innerHTML=yearSlideHTML(w); stage.appendChild(el);
+      const dotY=document.createElement('div'); dotY.className='dot'; dotY.onclick=()=>go(i); $('#dots').appendChild(dotY);
+      return {el,w}; }
+    const eyebrow=w.company?'WIG DE LA COMPAÑÍA':`WIG DE SOPORTE ${wigList.indexOf(w)+1} DE ${wigList.length}`;
     const big1=w.acum
       ? {lbl:'Real acumulado', val:r?w.fmt(r.realA):'—', sub:r?('Meta a la fecha: '+w.fmt(r.metaA)):'Sin datos aún', cls:v.cls==='none'?'plain':v.cls}
       : {lbl:'Último resultado', val:r?w.fmt(r.real):'—', sub:'Meta: '+(w.meta!=null?w.fmt(w.meta):'—'), cls:v.cls==='none'?'plain':v.cls};
