@@ -18,13 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # El sitio queda restringido por IP (networking.allowedIpRanges en
-      # web/staticwebapp.config.json) — solo la oficina ve el marcador.
-      # Requiere el tier Standard de Static Web Apps.
-      - name: Verificar que la IP de oficina esté configurada
+      # El sitio exige login de empresa (Entra ID, un solo tenant) vía
+      # web/staticwebapp.config.json — solo cuentas @caobagroup.com entran.
+      # Requiere el tier Standard de Static Web Apps y, en el portal:
+      #   1) App registration de Entra (client id + secret).
+      #   2) App settings AAD_CLIENT_ID / AAD_CLIENT_SECRET en la Static Web App.
+      #   3) El TENANT_ID en el openIdIssuer (reemplaza el placeholder de abajo).
+      # La TV de la oficina NO usa este sitio: lee del PGX por LAN (sin login).
+      - name: Verificar que el tenant de Entra esté configurado
         run: |
-          if grep -q "REEMPLAZAR-IP-OFICINA" web/staticwebapp.config.json; then
-            echo "::error::Falta la IP pública de la oficina en web/staticwebapp.config.json (allowedIpRanges). Sin ella el sitio quedaría mal restringido."
+          if grep -q "REEMPLAZAR-TENANT-ID" web/staticwebapp.config.json; then
+            echo "::error::Falta el TENANT_ID de Entra en web/staticwebapp.config.json (auth.identityProviders.azureActiveDirectory.registration.openIdIssuer). Sin él el login quedaría mal configurado."
             exit 1
           fi
 

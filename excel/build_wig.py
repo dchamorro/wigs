@@ -150,6 +150,39 @@ WIGS = [
                 ('% casos críticos resueltos dentro del SLA', 0.95, PCT),
                 ('Llamadas proactivas de CSM en el mes', 12, CNT),
                 ('Promotores contactados para referencia', 3, CNT)]),
+    dict(tab='10. Apalancamiento', title='WIG 10 — Sostener costos locales planos mientras crece el ingreso (apalancamiento operativo)',
+         lag='Costo indirecto local + OREX del mes como % del ingreso del mes (objetivo: que BAJE al crecer ventas).',
+         fromto='De ~13% (local+OREX / ingreso) hacia ≤9% sostenido, manteniendo el costo local en valor absoluto plano mientras el ingreso crece.',
+         equipo='Finanzas, Customer Success, todas las áreas locales', meta=0.09, fmt=PCT, tipo='nivel_max',
+         end=None, freq='M', riesgo=0.01,
+         leads=[('Costo local absoluto del mes vs. mes base (≤100%)', 1.0, PCT),
+                ('Headcount local de apoyo vs. plan plano (≤100%)', 1.0, PCT),
+                ('Vacantes de apoyo cubiertas con productividad, no contratación', 1, CNT),
+                ('% de crecimiento de ingreso absorbido sin nuevo costo local', 1.0, PCT),
+                ('Iniciativas de automatización/eficiencia en marcha', 1, CNT),
+                ('Revisión mensual de costo local por área ejecutada (1 = sí)', 1, CNT)]),
+    dict(tab='11. Recuperar DS', title='WIG 11 — Recuperar el margen de Digital Solutions y eliminar líneas con GP negativo',
+         lag='GP del mes de las líneas hoy negativas (Digital Solutions + service-attach): de negativo a positivo (USD).',
+         fromto='De ~-$78K/mes de arrastre (DS + líneas negativas) a GP ≥ $0 y luego positivo, antes de dic 2027.',
+         equipo='Ventas, Pre-Sales, Del - DS, Finanzas', meta=0, fmt=USD, tipo='nivel_min',
+         end=None, freq='M', riesgo=10000,
+         leads=[('% negocios DS cotizados con GP ≥ piso de margen', 1.0, PCT),
+                ('Líneas con GP negativo re-precificadas o cerradas (acum.)', 1, CNT),
+                ('Contratos DS renegociados al alza en el mes', 1, CNT),
+                ('% utilización de la célula / SOC', 0.70, PCT),
+                ('Revisión de rentabilidad por línea DS ejecutada (1 = sí)', 1, CNT),
+                ('Casos de service-attach negativo investigados', 2, CNT)]),
+    dict(tab='12. Utilizacion', title='WIG 12 — Subir la utilización facturable de ingenieros locales de 42% a 48%+',
+         lag='% de horas facturables sobre horas disponibles de los ingenieros locales (mes). Costo ya fijo = margen directo.',
+         fromto='De 42% a ≥48% de utilización facturable, sostenido, antes de dic 2027.',
+         equipo='Del - TSS, Del - DC, Customer Success, Pre-Sales', meta=0.48, fmt=PCT, tipo='nivel_min',
+         end=None, freq='M', riesgo=0.03,
+         leads=[('Horas facturables registradas en el mes vs. meta', 1.0, PCT),
+                ('% de timesheets completos y a tiempo', 1.0, PCT),
+                ('Horas advisory/billable vendidas en el mes', 40, CNT),
+                ('Ingenieros con utilización < 40% con plan de acción', 1, CNT),
+                ('Proyectos con staffing confirmado 2 semanas antes', 3, CNT),
+                ('% de horas no facturables justificadas/categorizadas', 1.0, PCT)]),
 ]
 
 wb = Workbook()
@@ -264,45 +297,183 @@ def build_wig_tab(w):
 
 lasts = {w['tab']: build_wig_tab(w) for w in WIGS}
 
+# ---------- Páginas por año (meta de utilidad neta + cobertura de backlog) ----------
+# Una pestaña por año futuro (2027/2028/2029). Encabeza con la META DE UTILIDAD
+# NETA (NAT) del año; debajo, el camino de GP y la cobertura de backlog: cuánto
+# GP ya está comprometido por contratos conocidos y cuánto falta vender (brecha).
+# La tabla semanal se actualiza cada lunes de 2026.
+BACKLOG_START = date(2026, 6, 15)
+BACKLOG_END = date(2026, 12, 28)
+BL_DATA0 = 12
+BACKLOG_YEARS = [
+    dict(tab='2027', year='2027', ingreso=21000000, gp_pct=0.16, nat_meta=1000000, assume_gp=False),
+    dict(tab='2028', year='2028', ingreso=28571000, gp_pct=0.164, nat_meta=2000000, assume_gp=False),
+    # 2029: vende $2M más que 2028; margen neto 8%; GP% es supuesto editable.
+    dict(tab='2029', year='2029', ingreso=30571000, gp_pct=0.165, nat_meta=2445680, assume_gp=True),
+]
+
+def build_year_tab(b):
+    ws = wb.create_sheet(b['tab'])
+    ws.sheet_view.showGridLines = False
+    periods = mondays(BACKLOG_START, BACKLOG_END)
+    last = BL_DATA0 + len(periods) - 1
+    nat_pct = b['nat_meta'] / b['ingreso']
+    ws.merge_cells('A1:F1')
+    ws['A1'] = f"{b['year']} — Meta de Utilidad Neta (NAT)"; ws['A1'].font = F_TITLE
+    ws.merge_cells('A2:F2')
+    ws['A2'] = (f"Meta de utilidad neta después de impuestos para {b['year']}. Debajo: el camino de GP y la "
+                f"cobertura de backlog — cuánto GP ya está comprometido por contratos conocidos y cuánto "
+                f"falta vender. Se actualiza cada semana de {BACKLOG_START.year}.")
+    ws['A2'].font = F_TXT; ws['A2'].alignment = WRAP
+    def lbl(c, t): ws[c] = t; ws[c].font = F_LBL
+    def numc(c, v, f=USD, font=F_FORM):
+        cell = ws[c]; cell.value = v; cell.font = font; cell.number_format = f
+    lbl('A4', 'Ingreso meta:'); numc('B4', b['ingreso'])
+    lbl('D4', 'GP meta %:')
+    gp = ws['E4']; gp.value = b['gp_pct']; gp.number_format = PCT
+    gp.font = F_INPUT if b['assume_gp'] else F_FORM
+    if b['assume_gp']: gp.fill = FILL_YEL  # supuesto a confirmar
+    lbl('A5', 'GP meta (Ingreso × GP%):'); numc('B5', '=B4*E4')
+    lbl('D5', 'META NAT (utilidad neta):')
+    natc = ws['E5']; natc.value = b['nat_meta']; natc.number_format = USD
+    natc.font = Font(name=ARIAL, size=14, bold=True, color='1F3864')  # hero: la meta del año
+    lbl('A6', 'GP comprometido (último):')
+    numc('B6', f'=IFERROR(LOOKUP(2,1/($B${BL_DATA0}:$B${last}<>""),$B${BL_DATA0}:$B${last}),0)')
+    lbl('D6', '% cobertura:'); ws['E6'].value = '=IFERROR(B6/B5,0)'; ws['E6'].number_format = PCT; ws['E6'].font = F_FORM
+    lbl('A7', 'Brecha (falta vender):'); numc('B7', '=B5-B6')
+    lbl('D7', 'Margen NAT (NAT / Ingreso):'); ws['E7'].value = nat_pct; ws['E7'].number_format = PCT; ws['E7'].font = F_FORM
+    ws['A9'] = f"Backlog comprometido por semana ({b['year']})"
+    ws['A9'].font = Font(name=ARIAL, size=12, bold=True, color='1F3864')
+    hdrs = ['Semana', 'GP comprometido (acum.)', 'GP meta', 'Brecha', '% cobertura']
+    for c, h in enumerate(hdrs, 1):
+        cell = ws.cell(row=11, column=c, value=h)
+        cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = WRAPC; cell.border = BORDER
+    for i, p in enumerate(periods):
+        r = BL_DATA0 + i
+        dc = ws.cell(row=r, column=1, value=p); dc.font = F_FORM; dc.number_format = 'dd-mmm-yy'
+        bc = ws.cell(row=r, column=2); bc.font = F_INPUT; bc.number_format = USD  # GP comprometido (acum., entrada)
+        ws.cell(row=r, column=3, value='=$B$5').number_format = USD
+        ws.cell(row=r, column=4, value=f'=IF(B{r}="","",C{r}-B{r})').number_format = USD
+        ws.cell(row=r, column=5, value=f'=IF(B{r}="","",B{r}/C{r})').number_format = '0.0%'
+        for c in range(1, 6):
+            cell = ws.cell(row=r, column=c); cell.border = BORDER
+            if c in (3, 4, 5): cell.alignment = CENTER
+            if i % 2 == 1 and c != 2: cell.fill = FILL_GREY
+    ws.freeze_panes = f'A{BL_DATA0}'
+    for cl, wd in {'A': 12, 'B': 22, 'C': 14, 'D': 14, 'E': 12}.items():
+        ws.column_dimensions[cl].width = wd
+    ch = LineChart(); ch.title = f'Cobertura {b["year"]}: GP comprometido vs meta'; ch.style = 12
+    ch.height, ch.width = 8, 16
+    data = Reference(ws, min_col=2, max_col=3, min_row=11, max_row=last)
+    cats = Reference(ws, min_col=1, min_row=BL_DATA0, max_row=last)
+    ch.add_data(data, titles_from_data=True); ch.set_categories(cats)
+    ch.series[0].graphicalProperties.line.solidFill = '2E75B6'
+    ch.series[0].graphicalProperties.line.width = 28000
+    ch.series[1].graphicalProperties.line.solidFill = 'A6A6A6'
+    ch.series[1].graphicalProperties.line.dashStyle = 'dash'
+    ws.add_chart(ch, 'G4')
+    return last
+
+year_lasts = {b['tab']: build_year_tab(b) for b in BACKLOG_YEARS}
+
 # ---------- Dashboard ----------
 ws = dash
 ws.sheet_view.showGridLines = False
+F_SECT = Font(name=ARIAL, size=12, bold=True, color='1F3864')
 ws.merge_cells('A1:H1'); ws['A1'] = 'Tablero 4DX — GBM Nicaragua'; ws['A1'].font = Font(name=ARIAL, size=16, bold=True, color='1F3864')
-ws.merge_cells('A2:H2'); ws['A2'] = 'WIG de la compañía: Generar $1,000,000 de utilidad neta después de impuestos (NAT) en el 2027'
+ws.merge_cells('A2:H2'); ws['A2'] = 'WIG de la compañía: Construir la utilidad neta (NAT) de Nicaragua — $1M en 2027, $2M (7%) en 2028, $2.4M (8%) en 2029'
 ws['A2'].font = Font(name=ARIAL, size=11, bold=True)
-ws['A4'] = 'Meta anual NAT:'; ws['A4'].font = F_LBL
-ws['C4'] = 1000000; ws['C4'].font = F_INPUT; ws['C4'].number_format = USD; ws['C4'].fill = FILL_YEL
+
+# --- Metas de Utilidad Neta (NAT) 2027 → 2029, con base 2026 (NAT real = entrada anual) ---
+ws['A4'] = 'Metas de Utilidad Neta (NAT) 2027 → 2029  (base 2026)'; ws['A4'].font = F_SECT
+traj_hdrs = ['Año', 'Ingreso', 'GP %', 'Meta NAT', 'NAT %', 'NAT real', 'Estado', 'Ir a pestaña']
+for c, h in enumerate(traj_hdrs, 1):
+    cell = ws.cell(row=5, column=c, value=h)
+    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
+# (etiqueta, ingreso, GP%, NAT meta, pestaña del año o None para la base)
+TRAJ = [('2026 (estimado)', 18656000, 0.144, 375000, None),
+        ('2027 (meta)', 21000000, 0.16, 1000000, '2027'),
+        ('2028 (meta)', 28571000, 0.164, 2000000, '2028'),
+        ('2029 (meta)', 30571000, 0.165, 2445680, '2029')]  # 2029: +$2M ventas vs 2028, NAT 8%
+TRAJ0 = 6
+for i, (yr, ing, gp, nat, tab) in enumerate(TRAJ):
+    r = TRAJ0 + i
+    ws.cell(row=r, column=1, value=yr).font = F_FORM
+    ws.cell(row=r, column=2, value=ing).number_format = USD
+    ws.cell(row=r, column=3, value=gp).number_format = PCT
+    ws.cell(row=r, column=4, value=nat).number_format = USD
+    ws.cell(row=r, column=5, value=f'=D{r}/B{r}').number_format = PCT
+    rc = ws.cell(row=r, column=6); rc.font = F_INPUT; rc.number_format = USD  # NAT real (entrada)
+    ws.cell(row=r, column=7, value=f'=IF(F{r}="","—",IF(F{r}>=D{r}*0.95,"En meta",IF(F{r}>=D{r}*0.8,"Riesgo","Atrasado")))')
+    if tab:
+        lk = ws.cell(row=r, column=8, value=f'Ver {tab}'); lk.hyperlink = f"#'{tab}'!A1"
+        lk.font = Font(name=ARIAL, size=10, color='0563C1', underline='single')
+    for c in range(1, 9):
+        cell = ws.cell(row=r, column=c); cell.border = BORDER
+        if c not in (6, 8) and cell.font.color is None: cell.font = F_FORM
+        if c in (3, 5, 7, 8): cell.alignment = CENTER
+traj_last = TRAJ0 + len(TRAJ) - 1
+estado_cf(ws, f'G{TRAJ0}:G{traj_last}')
+ws.cell(row=10, column=1, value='El tope de impuesto mínimo (3% sobre ventas) fija el piso de impuestos; por eso la meta se gana en GP% y en mantener el costo local plano, no solo en crecer ventas.').font = Font(name=ARIAL, size=9, italic=True, color='808080')
+
+# --- Cobertura de backlog: GP ya comprometido vs meta del año (lee las páginas Backlog) ---
+ws['A12'] = 'Cobertura de backlog — GP comprometido vs meta del año'; ws['A12'].font = F_SECT
+bl_hdrs = ['Año', 'GP meta', 'GP comprometido', 'Brecha (falta vender)', '% cobertura']
+for c, h in enumerate(bl_hdrs, 1):
+    cell = ws.cell(row=13, column=c, value=h)
+    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = WRAPC; cell.border = BORDER
+for i, b in enumerate(BACKLOG_YEARS):
+    r = 14 + i
+    q = f"'{b['tab']}'"
+    ws.cell(row=r, column=1, value=int(b['year'])).font = F_FORM
+    ws.cell(row=r, column=2, value=f'={q}!$B$5').number_format = USD       # GP meta
+    ws.cell(row=r, column=3, value=f'={q}!$B$6').number_format = USD       # comprometido último
+    ws.cell(row=r, column=4, value=f'={q}!$B$7').number_format = USD       # brecha
+    ws.cell(row=r, column=5, value=f'={q}!$E$6').number_format = PCT       # % cobertura
+    for c in range(1, 6):
+        cell = ws.cell(row=r, column=c); cell.border = BORDER
+        if cell.font.color is None: cell.font = F_LINK if c >= 2 else F_FORM
+        if c in (1, 5): cell.alignment = CENTER
+        if i % 2 == 1: cell.fill = FILL_GREY
+bl_last = 14 + len(BACKLOG_YEARS) - 1
+
+# --- Seguimiento mensual NAT del año en curso ---
+ws['A18'] = 'Seguimiento mensual NAT — año en curso'; ws['A18'].font = F_SECT
+ws['A19'] = 'Meta anual NAT:'; ws['A19'].font = F_LBL
+ws['C19'] = 1000000; ws['C19'].font = F_INPUT; ws['C19'].number_format = USD; ws['C19'].fill = FILL_YEL
+DASH0 = 22
 hdrs = ['Mes', 'Meta mensual', 'NAT real', 'Meta acum.', 'Real acum.', '% avance', 'Estado']
 for c, h in enumerate(hdrs, 1):
-    cell = ws.cell(row=6, column=c, value=h)
+    cell = ws.cell(row=21, column=c, value=h)
     cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
 for i, m in enumerate(month_firsts(date(2027, 1, 1), 12)):
-    r = 7 + i
+    r = DASH0 + i
     mc = ws.cell(row=r, column=1, value=m); mc.number_format = 'mmm-yy'; mc.font = F_FORM
-    ws.cell(row=r, column=2, value='=$C$4/12').number_format = USD
+    ws.cell(row=r, column=2, value='=$C$19/12').number_format = USD
     rc = ws.cell(row=r, column=3); rc.font = F_INPUT; rc.number_format = USD
-    ws.cell(row=r, column=4, value=f'=SUM($B$7:B{r})').number_format = USD
-    ws.cell(row=r, column=5, value=f'=SUM($C$7:C{r})').number_format = USD
-    ws.cell(row=r, column=6, value=f'=IF(COUNT($C$7:C{r})=0,"",E{r}/D{r})').number_format = '0.0%'
+    ws.cell(row=r, column=4, value=f'=SUM($B${DASH0}:B{r})').number_format = USD
+    ws.cell(row=r, column=5, value=f'=SUM($C${DASH0}:C{r})').number_format = USD
+    ws.cell(row=r, column=6, value=f'=IF(COUNT($C${DASH0}:C{r})=0,"",E{r}/D{r})').number_format = '0.0%'
     ws.cell(row=r, column=7, value=f'=IF(F{r}="","",IF(F{r}>=0.95,"En meta",IF(F{r}>=0.8,"Riesgo","Atrasado")))')
     for c in range(1, 8):
         cell = ws.cell(row=r, column=c); cell.border = BORDER
         if c != 3 and cell.font.color is None: cell.font = F_FORM
         if c in (6, 7): cell.alignment = CENTER
         if i % 2 == 1 and c != 3: cell.fill = FILL_GREY
-estado_cf(ws, 'G7:G18')
+last_dash = DASH0 + 11
+estado_cf(ws, f'G{DASH0}:G{last_dash}')
 ch = LineChart(); ch.title = 'NAT 2027 — Meta vs Real (acumulado)'; ch.style = 12
 ch.height, ch.width = 8, 14
-data = Reference(ws, min_col=4, max_col=5, min_row=6, max_row=18)
-cats = Reference(ws, min_col=1, min_row=7, max_row=18)
+data = Reference(ws, min_col=4, max_col=5, min_row=21, max_row=last_dash)
+cats = Reference(ws, min_col=1, min_row=DASH0, max_row=last_dash)
 ch.add_data(data, titles_from_data=True); ch.set_categories(cats)
 ch.series[0].graphicalProperties.line.solidFill = 'A6A6A6'
 ch.series[0].graphicalProperties.line.dashStyle = 'dash'
 ch.series[1].graphicalProperties.line.solidFill = '2E75B6'
 ch.series[1].graphicalProperties.line.width = 28000
-ws.add_chart(ch, 'I4')
-R0 = 22
-ws.cell(row=R0 - 1, column=1, value='WIGs de soporte — estado al último dato ingresado').font = Font(name=ARIAL, size=12, bold=True, color='1F3864')
+ws.add_chart(ch, 'I18')
+R0 = 36
+ws.cell(row=R0 - 1, column=1, value='WIGs de soporte — estado al último dato ingresado').font = F_SECT
 hdrs = ['#', 'WIG de soporte', 'Dueño', 'Equipo', 'Meta', 'Último real', 'Estado', 'Ir a pestaña']
 for c, h in enumerate(hdrs, 1):
     cell = ws.cell(row=R0, column=c, value=h)
@@ -329,45 +500,6 @@ for cl, wd in {'A': 5, 'B': 52, 'C': 16, 'D': 30, 'E': 11, 'F': 11, 'G': 11, 'H'
     ws.column_dimensions[cl].width = wd
 for i in range(len(WIGS)): ws.row_dimensions[R0 + 1 + i].height = 30
 
-# ---------- Compromisos ----------
-# Tabla plana de compromisos semanales por WIG/lead. El marcador la lee por
-# encabezados (fila 1) — el detalle de cada lead muestra sus compromisos.
-from openpyxl.worksheet.datavalidation import DataValidation
-comp = wb.create_sheet('Compromisos')
-comp.sheet_view.showGridLines = False
-COMP_HDRS = ['Semana', 'WIG', 'Lead', 'Compromiso', 'Responsable', 'Estado']
-COMP_ROWS = 400
-for c, h in enumerate(COMP_HDRS, 1):
-    cell = comp.cell(row=1, column=c, value=h)
-    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
-dv_wig = DataValidation(type='list', formula1='"1,2,3,4,5,6,7,8,9"', allow_blank=True)
-dv_lead = DataValidation(type='list', formula1='"1,2,3,4,5,6,7,8"', allow_blank=True)
-dv_estado = DataValidation(type='list', formula1='"Pendiente,Hecho"', allow_blank=True)
-for dv in (dv_wig, dv_lead, dv_estado):
-    comp.add_data_validation(dv)
-dv_wig.add(f'B2:B{COMP_ROWS + 1}')
-dv_lead.add(f'C2:C{COMP_ROWS + 1}')
-dv_estado.add(f'F2:F{COMP_ROWS + 1}')
-for r in range(2, COMP_ROWS + 2):
-    for c in range(1, 7):
-        cell = comp.cell(row=r, column=c)
-        cell.border = BORDER
-        cell.font = F_INPUT if c != 4 else F_INPUT_S
-        if c in (2, 3, 6): cell.alignment = CENTER
-        if c == 4: cell.alignment = WRAP
-    comp.cell(row=r, column=1).number_format = 'dd-mmm-yy'
-comp.conditional_formatting.add(
-    f'F2:F{COMP_ROWS + 1}',
-    Rule(type='containsText', operator='containsText', text='Hecho', dxf=GREEN_DXF,
-         formula=['NOT(ISERROR(SEARCH("Hecho",F2)))']))
-comp.conditional_formatting.add(
-    f'F2:F{COMP_ROWS + 1}',
-    Rule(type='containsText', operator='containsText', text='Pendiente', dxf=YEL_DXF,
-         formula=['NOT(ISERROR(SEARCH("Pendiente",F2)))']))
-for cl, wd in {'A': 11, 'B': 6, 'C': 6, 'D': 64, 'E': 18, 'F': 12}.items():
-    comp.column_dimensions[cl].width = wd
-comp.freeze_panes = 'A2'
-
 # ---------- Instrucciones ----------
 ins = wb.create_sheet('Instrucciones')
 ins.sheet_view.showGridLines = False
@@ -386,9 +518,7 @@ lines = [
     ('• El % de cada lead se calcula automáticamente contra su meta. Dejar la meta vacía desactiva el lead ("(Disponible)").', F_TXT),
     ('• Definan todos los leads en positivo (más = mejor) para que el % se lea igual en todos.', F_TXT),
     ('', None),
-    ('COMPROMISOS SEMANALES (pestaña "Compromisos"):', F_LBL),
-    ('• En la cadencia, cada quien registra sus compromisos de la semana: fecha (Semana), número de WIG (1–9), número de lead (1–8), el compromiso, el responsable y el estado (Pendiente / Hecho).', F_TXT),
-    ('• En el marcador del televisor, al tocar un lead se abre su detalle con la historia del indicador y sus compromisos.', F_TXT),
+    ('CÓDIGO DE COLORES:', F_LBL),
     ('• Texto AZUL = celdas de entrada. Texto NEGRO = fórmulas (no tocar). Texto VERDE = vínculos entre pestañas.', F_TXT),
     ('• Fondo AMARILLO = supuestos pendientes de definir (dueños, metas "X" de los WIGs 2 y 9).', F_TXT),
     ('• Estado: En meta ≥ 95% del plan · Riesgo 80–95% · Atrasado < 80%.', F_TXT),

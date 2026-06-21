@@ -16,6 +16,9 @@ PROFILES = {
  '7. MV Digital Sol':  ('S. Morales',  [0,0,2500,0,0,1800,0,0,2200,0,0,0], 0.85),
  '8. GP 16%':          ('F. Tellez',   [.148,.152,.156,.161,.163], 1.0),
  '9. CSAT':            ('L. Espinoza', [4.1,4.2,4.3,4.4,4.5], 0.9),
+ '10. Apalancamiento': ('F. Tellez',   [.13,.125,.118,.11,.10], 0.95),
+ '11. Recuperar DS':   ('S. Morales',  [-78000,-62000,-45000,-28000,-12000], 0.9),
+ '12. Utilizacion':    ('A. Vargas',   [.42,.435,.45,.46,.47], 0.92),
 }
 
 def main(inp, out):
@@ -43,8 +46,20 @@ def main(inp, out):
                 else: v=round(v,2)
                 s.cell(row=r,column=c,value=v)
     d = wb['Dashboard']
+    # NAT real mensual del año en curso: bloque mensual desde la fila 22 (col C)
     for i,v in enumerate([70000,78000,90000,85000,95000]):
-        d.cell(row=7+i,column=3,value=v)
+        d.cell(row=22+i,column=3,value=v)
+    # Backlog: GP comprometido acumulado por semana (col B, desde fila 12) — demo
+    BL_DEMO = {
+        '2027': [2000000,2150000,2300000,2450000,2600000],
+        '2028': [1600000,1900000,2150000,2350000,2500000],
+        '2029': [700000,950000,1150000,1350000,1550000],
+    }
+    for tab,vals in BL_DEMO.items():
+        if tab not in wb.sheetnames: continue
+        bs = wb[tab]
+        for i,v in enumerate(vals):
+            bs.cell(row=12+i,column=2,value=v)
     if 'Compromisos' in wb.sheetnames:
         from datetime import date, timedelta
         cs = wb['Compromisos']

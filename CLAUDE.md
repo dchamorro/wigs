@@ -1,8 +1,8 @@
 # Marcador WIG 4DX — GBM Nicaragua
 
 Sistema de scoreboards 4DX (4 Disciplinas de Ejecución). WIG de compañía:
-$1M de utilidad neta después de impuestos (NAT) en 2027, soportado por 9 WIGs
-con lead measures semanales/mensuales.
+$1M de utilidad neta después de impuestos (NAT) en 2027 ($2M en 2028),
+soportado por 12 WIGs con lead measures semanales/mensuales.
 
 ## Arquitectura
 
@@ -26,14 +26,18 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
   funciona offline). CONFIG al inicio del script: `DATA_URL` (vacío = drag-drop)
   y `REFRESH_MIN`. Tema claro/oscuro (botón ◐ o tecla T, persiste en
   localStorage). Tocar/clicar un lead abre su detalle (historia del indicador
-  + compromisos de la pestaña Compromisos); apto para pantallas táctiles.
+  + compromisos, si el tablero trae la pestaña Compromisos opcional); apto para
+  pantallas táctiles.
 - `deploy/setup-wig.sh` — instala Samba + nginx + timer de publicación en el PGX.
 - `.github/workflows/azure-static-web-apps.yml` — publica marcador.html +
   `web/tablero.xlsx` a Azure Static Web Apps en cada push a main que toque
   `web/`. Parcha `DATA_URL: 'tablero.xlsx'` al deployar (misma convención
-  que el PGX; el fuente queda con DATA_URL vacío). El sitio está restringido
-  por IP a la oficina (tier Standard). Los datos se suben con
-  `make publicar DATOS=...` (valida contrato + recalc antes de pushear).
+  que el PGX; el fuente queda con DATA_URL vacío). El sitio exige **login de
+  empresa** (Entra ID de un solo tenant; solo cuentas @caobagroup.com) vía
+  `web/staticwebapp.config.json` (tier Standard). La TV de la oficina NO usa
+  este sitio: lee del PGX por LAN sin login; Azure es la copia para acceso
+  remoto autenticado. Setup en el portal (una vez): `docs/AZURE_LOGIN.md`.
+  Los datos se suben con `make publicar DATOS=...` (valida contrato + recalc).
 - `tests/test_contract.py` — valida el contrato Excel↔parser (ver abajo).
 
 ## EL CONTRATO Excel ↔ parser (no romper)
@@ -42,8 +46,14 @@ deploy: PGX (Lenovo, DGX OS) ── samba comparte el .xlsx ── timer lo vali
 cambio estructural en `build_wig.py` debe reflejarse en el parser y en
 `tests/test_contract.py`, en el mismo commit.
 
-Pestañas: `Dashboard` (primera), pestañas de WIG, `Compromisos` (tabla plana
-que alimenta el detalle de cada lead en el TV) e `Instrucciones` (ignorada).
+Pestañas: `Dashboard` (primera), 12 pestañas de WIG (`1. …` … `12. …`), 3
+páginas por año (`2027`/`2028`/`2029`) e `Instrucciones` (ignorada). Las páginas
+por año (nombre de 4 dígitos, o el legado `Backlog <año>`) **no** son slides de
+WIG, pero el TV **sí** genera un slide propio por año (meta NAT + cobertura de
+backlog), leyendo B4/E4/B5/E5/B6/E6/B7/E7 y la tabla semanal (A/B/C desde fila
+12). El orden de slides es: Compañía → 2027 → 2028 → 2029 → los 12 WIGs.
+`Compromisos` ya **no se genera** pero el parser conserva soporte **opcional**
+para tableros viejos que la traigan.
 
 Por pestaña de WIG:
 | Celda/Col | Contenido |
@@ -57,17 +67,41 @@ Por pestaña de WIG:
 | Fila 9, misma col | Meta del lead |
 | Filas 11+ | B fecha · C meta · D real (input) · E/F acumulados · G % · H estado · I+2k real lead · J+2k % lead |
 
-Dashboard: C4 meta anual NAT · filas 7–18: A mes, B meta, C real (input),
-D/E acumulados, F %, G estado.
+Dashboard (cuatro bloques + tabla de soporte). Es la **página principal**: arriba
+las metas de utilidad neta (NAT) de los 3 años con enlace a cada pestaña de año.
+- Metas de Utilidad Neta (NAT) 2027→2029 (base 2026): encabezados fila 5, datos
+  filas 6–9 (A año · B ingreso · C GP% · D **Meta NAT** · E NAT% · F NAT real
+  input · G estado · H enlace a la pestaña del año). **El parser del TV lee estas
+  4 filas** (año + Meta NAT col D + NAT real col F).
+- Cobertura de backlog: encabezados fila 13, datos filas 14–16 (un año por fila)
+  (A año · B GP meta · C GP comprometido · D brecha · E % cobertura) — fórmulas
+  que referencian las páginas por año. **El parser del TV lee 14–16.**
+- Seguimiento mensual NAT del año en curso: **C19 meta anual NAT** · encabezados
+  fila 21 · filas 22–33: A mes, B meta, C real (input), D/E acumulados, F %,
+  G estado. **El parser del TV lee este bloque (C19 + filas 22–33).**
+- WIGs de soporte: encabezados fila 36, una fila por WIG (37–48).
 
-Compromisos (encabezados fijos en fila 1, datos desde fila 2):
-`Semana | WIG | Lead | Compromiso | Responsable | Estado` — WIG = 1–9 (número
-de pestaña), Lead = 1–8, Estado = `Pendiente`/`Hecho`. El parser la lee por
-posición A–F y es opcional (sin pestaña = sin compromisos en el detalle).
+Páginas por año `2027`/`2028`/`2029` (encabezan con la meta de utilidad neta):
+| Celda/Col | Contenido |
+|---|---|
+| A1 | Título `<año> — Meta de Utilidad Neta (NAT)` |
+| B4 / E4 | Ingreso meta / GP meta % (E4 editable si es supuesto, p. ej. 2029) |
+| B5 | **GP meta = Ingreso × GP%** (`=B4*E4`) — lo que la cobertura referencia |
+| E5 / E7 | **Meta NAT** (utilidad neta del año) / Margen NAT (NAT/Ingreso) |
+| B6 / E6 / B7 | GP comprometido (último) / % cobertura / brecha |
+| Filas 12+ | A semana · B GP comprometido acum. (input) · C GP meta · D brecha · E % |
+El Dashboard las lee por posición fija (B5/B6/B7/E6); migrate copia la col B por fecha.
+
+Compromisos (legado/opcional; el build ya no la genera). Si existe: encabezados
+fijos en fila 1, datos desde fila 2: `Semana | WIG | Lead | Compromiso |
+Responsable | Estado` — WIG = número de pestaña, Lead = 1–8, Estado =
+`Pendiente`/`Hecho`. El parser la lee por posición A–F y es opcional.
 
 Reglas duras:
 - DATA0 = fila 11. MAX_LEADS = 8. No cambiar sin tocar parser + tests + migrate.
-- WIGs "menos es mejor": el parser los detecta por `/expired/i` en nombre/título.
+- WIGs "menos es mejor": el parser los detecta por nombre/título con el regex
+  `LOWER_BETTER` (`/expired|apalanca|costos? local/i`). Al agregar un WIG de
+  nivel donde menos = mejor (status Excel `D<=C`), ampliar ese regex.
 - Los leads se definen en positivo (más = mejor) para que el % sea comparable.
 - L1–L2 son la "apuesta principal" (resaltados en el TV); L3–L8 son de apoyo.
 - Estados: En meta ≥95% · Riesgo 80–95% · Atrasado <80% (texto exacto, el

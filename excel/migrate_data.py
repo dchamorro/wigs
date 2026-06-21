@@ -10,16 +10,25 @@ Copia (solo celdas de entrada, nunca fórmulas):
     metas de leads (fila 9), columna Real del lag (D) y columnas Real de
     cada lead — emparejando filas por la FECHA de la columna B, de modo
     que un cambio en el rango de periodos no desalinee los datos.
-  - Dashboard: meta anual (C4) y NAT real (C7:C18) emparejado por mes.
+  - Dashboard: meta anual NAT, NAT real mensual (emparejado por mes) y NAT
+    real anual de la trayectoria (emparejado por año). Se localizan por
+    etiqueta, así sirve aunque viejo y nuevo tengan el Dashboard en filas
+    distintas (p. ej. la reestructuración a 12 WIGs movió el bloque mensual).
 
 Después de migrar, recalcular:  python3 scripts/recalc.py SALIDA.xlsx
 """
+import re
 import sys
 from openpyxl import load_workbook
 
 DATA0 = 11
 MAX_LEADS = 8
 SKIP = {'Dashboard', 'Instrucciones', 'Compromisos'}
+
+
+def is_year_page(name):
+    """Pestaña por año: '2027'/'2028'/'2029' (o el legado 'Backlog <año>')."""
+    return bool(re.match(r'^\d{4}$', name)) or name.startswith('Backlog ')
 
 
 def date_map(ws):
@@ -34,14 +43,47 @@ def date_map(ws):
     return out
 
 
+def _find_annual_nat(ws):
+    """Devuelve (fila, col) de la celda de meta anual NAT (a 2 columnas a la
+    derecha de la etiqueta 'Meta anual NAT:'), o None si no está."""
+    for r in range(1, 60):
+        v = ws.cell(row=r, column=1).value
+        if isinstance(v, str) and v.strip().startswith('Meta anual NAT'):
+            return (r, 3)
+    return None
+
+
+def _find_key_rows(ws, header):
+    """Localiza el encabezado `header` en la columna A y devuelve {clave: fila}
+    para las filas de datos debajo, hasta la primera fila sin etiqueta en A.
+    Sirve para los bloques 'Mes' (mensual NAT) y 'Año' (trayectoria)."""
+    hdr = None
+    for r in range(1, 60):
+        v = ws.cell(row=r, column=1).value
+        if isinstance(v, str) and v.strip() == header:
+            hdr = r
+            break
+    if hdr is None:
+        return {}
+    out, r = {}, hdr + 1
+    while True:
+        v = ws.cell(row=r, column=1).value
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            break
+        key = v.date() if hasattr(v, 'date') else v
+        out[key] = r
+        r += 1
+    return out
+
+
 def main(old_path, new_path, out_path):
     old = load_workbook(old_path, data_only=False)
     new = load_workbook(new_path, data_only=False)
     report = []
 
     for name in new.sheetnames:
-        if name in SKIP or name not in old.sheetnames:
-            if name not in old.sheetnames and name not in SKIP:
+        if name in SKIP or is_year_page(name) or name not in old.sheetnames:
+            if name not in old.sheetnames and name not in SKIP and not is_year_page(name):
                 report.append(f'  {name}: pestaña nueva, sin datos que migrar')
             continue
         o, n = old[name], new[name]
@@ -86,19 +128,58 @@ def main(old_path, new_path, out_path):
             moved += 1
         report.append(f'  Compromisos: {moved} filas migradas')
 
-    # Dashboard NAT
+    # Páginas por año (2027/2028/2029): GP comprometido (col B) emparejado por
+    # fecha (col A, desde fila 12) y el GP% supuesto (E4) si el dueño lo cambió.
+    for name in new.sheetnames:
+        if not is_year_page(name) or name not in old.sheetnames:
+            continue
+        o, n = old[name], new[name]
+
+        def amap(ws):
+            out, r = {}, 12
+            while ws.cell(row=r, column=1).value is not None:
+                v = ws.cell(row=r, column=1).value
+                out[v.date() if hasattr(v, 'date') else v] = r
+                r += 1
+            return out
+
+        om, nm = amap(o), amap(n)
+        moved = 0
+        for fecha, orow in om.items():
+            nrow = nm.get(fecha)
+            if nrow is None:
+                continue
+            v = o.cell(row=orow, column=2).value
+            if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                n.cell(row=nrow, column=2, value=v)
+                moved += 1
+        if isinstance(o['E4'].value, (int, float)):
+            n['E4'] = o['E4'].value  # GP% supuesto
+        report.append(f'  {name}: {moved} semanas migradas')
+
+    # Dashboard NAT — se localiza por etiqueta (robusto ante cambios de fila)
     if 'Dashboard' in old.sheetnames:
         od, nd = old['Dashboard'], new['Dashboard']
-        if od['C4'].value is not None:
-            nd['C4'] = od['C4'].value
-        omeses = {od.cell(row=r, column=1).value: r for r in range(7, 19)}
-        for r in range(7, 19):
-            mes = nd.cell(row=r, column=1).value
-            orow = omeses.get(mes)
-            if orow:
+        # meta anual NAT: celda a la derecha de la etiqueta 'Meta anual NAT:'
+        oa, na = _find_annual_nat(od), _find_annual_nat(nd)
+        if oa is not None and na is not None and od.cell(row=oa[0], column=oa[1]).value is not None:
+            nd.cell(row=na[0], column=na[1], value=od.cell(row=oa[0], column=oa[1]).value)
+        # NAT real mensual (col C bajo el encabezado 'Mes'), emparejado por mes
+        omeses, nmeses = _find_key_rows(od, 'Mes'), _find_key_rows(nd, 'Mes')
+        for mes, orow in omeses.items():
+            nrow = nmeses.get(mes)
+            if nrow:
                 v = od.cell(row=orow, column=3).value
-                if v is not None:
-                    nd.cell(row=r, column=3, value=v)
+                if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                    nd.cell(row=nrow, column=3, value=v)
+        # NAT real anual de la trayectoria (col F bajo el encabezado 'Año'), por año
+        oyrs, nyrs = _find_key_rows(od, 'Año'), _find_key_rows(nd, 'Año')
+        for yr, orow in oyrs.items():
+            nrow = nyrs.get(yr)
+            if nrow:
+                v = od.cell(row=orow, column=6).value
+                if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                    nd.cell(row=nrow, column=6, value=v)
         report.append('  Dashboard: NAT migrado')
 
     new.save(out_path)
