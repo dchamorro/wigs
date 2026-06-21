@@ -89,6 +89,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .trajreal{font-size:1.9vh;color:var(--dim)}
 .trajbl{font-size:1.9vh;color:var(--dim)}
 .trajbl b{color:var(--gold);font-weight:800}
+/* chips de año en el gráfico multi-anual del slide de compañía */
+.yrchips{display:inline-flex;gap:.6vh;margin-left:1vh;vertical-align:middle}
+.yrchip{font-family:'Saira Condensed';font-weight:700;font-size:1.7vh;letter-spacing:.06em;padding:.2vh 1.2vh;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer}
+.yrchip.on{background:var(--gold);border-color:var(--gold);color:#1a1408}
+.yrmetric{font-size:1.7vh;color:var(--faint);margin-top:.2vh}
 .verdict{margin-left:auto;text-align:right;flex:none}
 .verdict .chip{display:inline-block;font-family:'Saira Condensed';font-weight:800;font-size:3.6vh;letter-spacing:.1em;padding:.6vh 1.4vw;border-radius:.8vh;text-transform:uppercase}
 .chip.win{color:var(--win);background:var(--win-bg);border:1px solid var(--win)}
@@ -263,7 +268,7 @@ function applyTheme(t){
   document.documentElement.dataset.theme=t;
   try{localStorage.setItem('wig_theme',t);}catch(e){}
   $('#btnTheme')&&($('#btnTheme').textContent=t==='light'?'◑ Oscuro':'◐ Claro');
-  if(slides.length&&slides[idx]){const cv=slides[idx].el.querySelector('canvas');if(cv)drawChart(cv,slides[idx].w);}
+  if(slides.length&&slides[idx]){const cv=slides[idx].el.querySelector('canvas');if(cv)drawChart(cv,chartTarget(slides[idx].w));}
 }
 const LOWER_BETTER=t=>/expired|apalanca|costos? local/i.test(t);   // WIGs "menos es mejor" (detección por nombre/título)
 const fmtMoney=v=>'$'+Math.round(v).toLocaleString('en-US');
@@ -298,6 +303,19 @@ function fmtFromCell(cell){            // use the Excel cell's own number format
 
 function parseWorkbook(wb){
   const out=[];
+  // pre-parse las páginas por año (2027/2028/2029): encabezado + serie semanal de backlog
+  const yearObjs = wb.SheetNames.filter(n=>/^\d{4}$/.test(n)).map(name=>{
+    const s=wb.Sheets[name]; const g=a=>{const c=s[a];return c?c.v:null};
+    const rows=[];
+    for(let r=12;r<400;r++){
+      const f=g('A'+r); if(f==null) break;
+      const comp=num(g('B'+r)), gpm=num(g('C'+r));    // B = GP comprometido (acum.), C = GP meta (plano)
+      rows.push({label:fmtDate(typeof f==='number'?xlDate(f):new Date(f)),
+        metaA:gpm, realA:comp, meta:gpm, real:comp});
+    }
+    return {year:name, ingreso:num(g('B4')), gpPct:num(g('E4')), gpMeta:num(g('B5')), natMeta:num(g('E5')),
+      comprometido:num(g('B6')), cobertura:num(g('E6')), brecha:num(g('B7')), natPct:num(g('E7')), rows};
+  });
   // company slide from Dashboard
   const d=wb.Sheets['Dashboard'];
   if(d){
@@ -322,26 +340,23 @@ function parseWorkbook(wb){
       const y4=(String(yr).match(/\d{4}/)||[''])[0];
       traj.push({year:String(yr), y4, natMeta:num(g('D'+r)), natReal:num(g('F'+r)), bl:backlog[y4]||null});
     }
+    // serie por año para el gráfico multi-anual del slide de compañía:
+    // 2027 = NAT mensual acumulado (real vs meta); 2028/2029 = backlog de GP (comprometido vs meta)
+    const years=[{year:'2027', metric:'Utilidad neta (NAT) acumulada · real vs meta',
+      rows, fmt:fmtMoney, acum:true, lowerBetter:false}];
+    yearObjs.filter(y=>y.year!=='2027').forEach(y=>years.push({year:y.year,
+      metric:'Backlog de GP · comprometido vs meta del año',
+      rows:y.rows, fmt:fmtMoney, acum:true, neutralFill:true, lowerBetter:false}));
     out.push({company:true, title:'Generar $1,000,000 de utilidad neta (NAT) en 2027',
       lag:'Utilidad neta después de impuestos, acumulada mensual vs plan.',
       duenio:'Gerencia General', equipo:'Toda la compañía', meta:num(g('C19'))||1e6,
-      acum:true, fmt:fmtMoney, lowerBetter:false, rows, leads:null, traj});
+      acum:true, fmt:fmtMoney, lowerBetter:false, rows, leads:null, traj, years, _sel:0});
   }
   // un slide por año (2027/2028/2029): meta de utilidad neta (NAT) + cobertura de backlog de GP
-  wb.SheetNames.filter(n=>/^\d{4}$/.test(n)).forEach(name=>{
-    const s=wb.Sheets[name]; const g=a=>{const c=s[a];return c?c.v:null};
-    const rows=[];
-    for(let r=12;r<400;r++){
-      const f=g('A'+r); if(f==null) break;
-      const comp=num(g('B'+r)), gpm=num(g('C'+r));    // B = GP comprometido (acum.), C = GP meta (plano)
-      rows.push({label:fmtDate(typeof f==='number'?xlDate(f):new Date(f)),
-        metaA:gpm, realA:comp, meta:gpm, real:comp});
-    }
-    out.push({yearPage:true, company:false, year:name,
-      ingreso:num(g('B4')), gpPct:num(g('E4')), gpMeta:num(g('B5')), natMeta:num(g('E5')),
-      comprometido:num(g('B6')), cobertura:num(g('E6')), brecha:num(g('B7')), natPct:num(g('E7')),
-      acum:true, fmt:fmtMoney, lowerBetter:false, neutralFill:true, rows, leads:null});
-  });
+  yearObjs.forEach(y=>out.push({yearPage:true, company:false, year:y.year,
+    ingreso:y.ingreso, gpPct:y.gpPct, gpMeta:y.gpMeta, natMeta:y.natMeta,
+    comprometido:y.comprometido, cobertura:y.cobertura, brecha:y.brecha, natPct:y.natPct,
+    acum:true, fmt:fmtMoney, lowerBetter:false, neutralFill:true, rows:y.rows, leads:null}));
   wb.SheetNames.filter(n=>!isSkip(n)).forEach((name,pos)=>{
     const s=wb.Sheets[name];
     const g=a=>{const c=s[a];return c?c.v:null};
@@ -537,6 +552,9 @@ function vizBig(w,k,cur){
 const VIZ=[vizBars,vizBullet,vizBig,vizSpark,vizGauge];
 function vizFor(k){ if(k===0)return vizGauge; if(k===1)return vizSpark; return VIZ[(k-2)%VIZ.length]; }
 
+/* qué serie dibuja el canvas: en el slide de compañía, el año seleccionado por los chips */
+function chartTarget(w){ return (w&&w.company&&w.years&&w.years.length) ? w.years[w._sel||0] : w; }
+
 /* slide por año: meta de utilidad neta (NAT) del año + cobertura de backlog de GP */
 function yearSlideHTML(w){
   const money=v=>v!=null?fmtMoney(v):'—';
@@ -620,6 +638,11 @@ function buildSlides(wigs){
       }).join('');
       leadsHtml=`<div class="leads cols${Math.min(4,n)} trajstrip"><div class="trajcap cond">Trayectoria NAT 2026 → 2029 · meta anual y cobertura de backlog (GP ya comprometido)</div>${tiles}</div>`;
     }
+    // gráfico multi-anual en el slide de compañía: chips por año (2027/2028/2029)
+    const multiYear=w.company&&w.years&&w.years.length>1;
+    const chartHead=multiYear
+      ? `<div class="lbl">Cómo vamos por año<span class="yrchips">${w.years.map((y,j)=>`<button class="yrchip${j===(w._sel||0)?' on':''}" data-yr="${j}">${esc(y.year)}</button>`).join('')}</span></div><div class="yrmetric">${esc(w.years[w._sel||0].metric)}</div>`
+      : `<div class="lbl">Marcador · meta vs real <span class="legend"><span><i class="meta"></i>Meta</span><span><i></i>Real</span></span></div>`;
     el.innerHTML=`
       <div class="head">
         <div>
@@ -637,10 +660,20 @@ function buildSlides(wigs){
           <div class="bignum"><div class="lbl">${big1.lbl}</div><div class="val cond ${big1.cls}">${big1.val}</div><div class="sub">${big1.sub}</div></div>
           <div class="bignum"><div class="lbl">${big2.lbl}</div><div class="val cond ${big2.cls}">${big2.val}</div><div class="sub">${big2.sub}</div></div>
         </div>
-        <div class="chartwrap"><div class="lbl">Marcador · meta vs real <span class="legend"><span><i class="meta"></i>Meta</span><span><i></i>Real</span></span></div><canvas></canvas></div>
+        <div class="chartwrap">${chartHead}<canvas></canvas></div>
       </div>
       ${leadsHtml}`;
     stage.appendChild(el);
+    if(multiYear){
+      el.querySelectorAll('.yrchip').forEach(btn=>btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        w._sel=+btn.dataset.yr;
+        el.querySelectorAll('.yrchip').forEach(b=>b.classList.toggle('on',b===btn));
+        const mc=el.querySelector('.yrmetric'); if(mc)mc.textContent=w.years[w._sel].metric;
+        const cv=el.querySelector('canvas'); if(cv)drawChart(cv,chartTarget(w));
+        resetIdle();
+      }));
+    }
     const dot=document.createElement('div'); dot.className='dot'; dot.onclick=()=>go(i);
     $('#dots').appendChild(dot);
     return {el,w};
@@ -653,7 +686,7 @@ function go(i,instant){
   idx=(i+slides.length)%slides.length;
   slides.forEach((s,k)=>s.el.classList.toggle('show',k===idx));
   document.querySelectorAll('.dot').forEach((d,k)=>d.classList.toggle('on',k===idx));
-  requestAnimationFrame(()=>{const cv=slides[idx].el.querySelector('canvas'); if(cv)drawChart(cv,slides[idx].w);});
+  requestAnimationFrame(()=>{const cv=slides[idx].el.querySelector('canvas'); if(cv)drawChart(cv,chartTarget(slides[idx].w));});
   restartTimer();
 }
 function restartTimer(){
