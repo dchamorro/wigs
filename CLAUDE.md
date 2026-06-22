@@ -47,13 +47,14 @@ cambio estructural en `build_wig.py` debe reflejarse en el parser y en
 `tests/test_contract.py`, en el mismo commit.
 
 Pestañas: `Dashboard` (primera), 12 pestañas de WIG (`1. …` … `12. …`), 3
-páginas por año (`2027`/`2028`/`2029`) e `Instrucciones` (ignorada). Las páginas
-por año (nombre de 4 dígitos, o el legado `Backlog <año>`) **no** son slides de
-WIG, pero el TV **sí** genera un slide propio por año (meta NAT + cobertura de
-backlog), leyendo B4/E4/B5/E5/B6/E6/B7/E7 y la tabla semanal (A/B/C desde fila
-12). El orden de slides es: Compañía → 2027 → 2028 → 2029 → los 12 WIGs.
-`Compromisos` ya **no se genera** pero el parser conserva soporte **opcional**
-para tableros viejos que la traigan.
+páginas por año (`2027`/`2028`/`2029`), `Tareas` e `Instrucciones` (ignoradas
+como slides). Las páginas por año (nombre de 4 dígitos, o el legado `Backlog
+<año>`) **no** son slides de WIG, pero el TV **sí** genera un slide propio por
+año (meta NAT + cobertura de backlog), leyendo B4/E4/B5/E5/B6/E6/B7/E7 y la
+tabla semanal (A/B/C desde fila 12). El orden de slides es: Compañía → 2027 →
+2028 → 2029 → los 12 WIGs. `Compromisos` ya **no se genera** pero el parser
+conserva soporte **opcional** para tableros viejos que la traigan. `Tareas` sí
+se genera y el parser la lee (no es slide; alimenta el detalle de cada lead).
 
 Por pestaña de WIG:
 | Celda/Col | Contenido |
@@ -95,7 +96,17 @@ El Dashboard las lee por posición fija (B5/B6/B7/E6); migrate copia la col B po
 Compromisos (legado/opcional; el build ya no la genera). Si existe: encabezados
 fijos en fila 1, datos desde fila 2: `Semana | WIG | Lead | Compromiso |
 Responsable | Estado` — WIG = número de pestaña, Lead = 1–8, Estado =
-`Pendiente`/`Hecho`. El parser la lee por posición A–F y es opcional.
+`Pendiente`/`Hecho`. El parser la lee por posición A–F y es opcional. En el
+detalle del TV se muestra **solo si trae filas** (debajo de «Tareas de soporte»).
+
+Tareas (tareas de soporte por lead; el build **sí** la genera). Encabezados
+fijos en fila 1, datos desde fila 2: `WIG | Lead | Tarea | Responsable | Estado`
+(cols A–E) — WIG = número de pestaña (1–12), Lead = 1–8, Estado =
+`Pendiente`/`En curso`/`Hecho` (con desplegables de validación). El parser
+(`parseTareas`) la lee por posición A–E y la agrupa por (WIG, Lead); el TV la
+muestra como «Tareas de soporte» en el detalle de cada lead (toque/clic). El
+build incluye filas semilla de ejemplo (WIG 1); `migrate` copia las filas reales
+(A2:E) y descarta la semilla. Es robusta a su ausencia (tableros viejos).
 
 Reglas duras:
 - DATA0 = fila 11. MAX_LEADS = 8. No cambiar sin tocar parser + tests + migrate.

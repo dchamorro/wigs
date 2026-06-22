@@ -196,6 +196,9 @@ canvas{flex:1;width:100%;min-height:0}
 .task .meta{margin-left:auto;flex:none;text-align:right;color:var(--faint);font-size:1.5vh;line-height:1.4}
 .task .meta b{color:var(--dim);font-weight:600}
 .notasks{color:var(--faint);font-size:1.8vh;padding:1.5vh 0}
+.task .meta .badge{display:inline-block;padding:.2vh .8vw;border-radius:.8vh;font-size:1.3vh;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--faint);color:var(--faint)}
+.task .meta .badge.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
+.task .meta .badge.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
 @media (prefers-reduced-motion: reduce){.slide{transition:none}#detail,#dcard{transition:none}}
 /* pantallas táctiles: blancos de toque grandes */
 @media (pointer:coarse){
@@ -259,8 +262,8 @@ canvas{flex:1;width:100%;min-height:0}
 const CONFIG = { DATA_URL: '', REFRESH_MIN: 10, IDLE_SEC: 75 };
 /* ================================================================ */
 const $=s=>document.querySelector(s);
-const SKIP=['Dashboard','Instrucciones','Compromisos'];
-const isSkip=n=>SKIP.includes(n)||/^Backlog /.test(n)||/^\d{4}$/.test(n);   // Dashboard/Instrucciones/Compromisos y páginas por año (2027/2028/2029) no son slides de WIG
+const SKIP=['Dashboard','Instrucciones','Compromisos','Tareas'];
+const isSkip=n=>SKIP.includes(n)||/^Backlog /.test(n)||/^\d{4}$/.test(n);   // Dashboard/Instrucciones/Compromisos/Tareas y páginas por año (2027/2028/2029) no son slides de WIG
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 /* tema claro/oscuro (persistente; T o botón para alternar) */
@@ -386,10 +389,32 @@ function parseWorkbook(wb){
     const wigNum=parseInt((String(name).match(/^(\d+)/)||[])[1],10)||(pos+1);
     out.push({company:false, title, lag, duenio:g('B4')||'—', equipo:g('E4')||'',
       meta, acum, fmt:fmtFromCell(s['B5']), lowerBetter:LOWER_BETTER(name+title),
-      rows, leads:leadDefs, wigNum, tasks:{}});
+      rows, leads:leadDefs, wigNum, tasks:{}, initiatives:{}});
   });
   const tasks=parseCompromisos(wb);
-  out.forEach(w=>{ if(!w.company) w.tasks=tasks[w.wigNum]||{}; });
+  const inits=parseTareas(wb);
+  out.forEach(w=>{ if(!w.company){ w.tasks=tasks[w.wigNum]||{}; w.initiatives=inits[w.wigNum]||{}; } });
+  return out;
+}
+
+/* pestaña 'Tareas': tabla plana A:E — WIG | Lead | Tarea | Responsable | Estado.
+   Tareas de soporte por lead (Estado: Pendiente/En curso/Hecho). Opcional. */
+function parseTareas(wb){
+  const s=wb.Sheets['Tareas']; const out={};
+  if(!s||!s['!ref']) return out;
+  const last=XLSX.utils.decode_range(s['!ref']).e.r+1;
+  for(let r=2;r<=last;r++){
+    const g=a=>{const c=s[a+r];return c?c.v:null};
+    const txt=g('C'); if(txt==null||String(txt).trim()==='') continue;
+    const wigN=parseInt(String(g('A')||'').replace(/\D/g,''),10);
+    const leadN=parseInt(String(g('B')||'').replace(/\D/g,''),10);
+    if(!wigN||!leadN||leadN>8) continue;
+    const est=String(g('E')||'').trim();
+    out[wigN]=out[wigN]||{};
+    (out[wigN][leadN-1]=out[wigN][leadN-1]||[]).push({
+      text:String(txt), resp:String(g('D')||''),
+      estado:est, done:/hech|done|complet|listo/i.test(est)});
+  }
   return out;
 }
 
@@ -741,7 +766,19 @@ function openDetail(w,k){
           <div class="txt">${esc(t.text)}</div>
           <div class="meta"><b>${esc(t.resp)}</b>${t.resp&&t.label?'<br>':''}${esc(t.label)}</div>
         </div>`).join('')}</div>`
-    : '<div class="notasks">Sin compromisos registrados para este indicador. Se anotan en la pestaña «Compromisos» del Excel (WIG '+w.wigNum+', Lead '+(k+1)+').</div>';
+    : '';
+  // tareas de soporte por lead (pestaña «Tareas»): Pendiente / En curso / Hecho
+  const inits=(w.initiatives&&w.initiatives[k])?w.initiatives[k]:[];
+  const initDone=inits.filter(t=>t.done).length;
+  const estCls=t=>t.done?'win':/curso|progres|marcha/i.test(t.estado)?'risk':'';
+  const initsHtml=inits.length
+    ? `<div class="tasks">${inits.map(t=>`
+        <div class="task${t.done?' done':''}">
+          <div class="mark">${t.done?'✓':''}</div>
+          <div class="txt">${esc(t.text)}</div>
+          <div class="meta"><b>${esc(t.resp)}</b>${t.resp&&t.estado?'<br>':''}<span class="badge ${estCls(t)}">${esc(t.estado||'')}</span></div>
+        </div>`).join('')}</div>`
+    : '<div class="notasks">Sin tareas de soporte para este indicador. Se anotan en la pestaña «Tareas» del Excel (WIG '+w.wigNum+', Lead '+(k+1)+').</div>';
   $('#dcard').innerHTML=`
     <div class="dhead">
       <div>
@@ -768,9 +805,13 @@ function openDetail(w,k){
         <div class="dchart">${detailBarsChart(w,k)}</div>
       </div>
       <div class="dsec">
-        <div class="lbl">Compromisos <span class="cnt">${tasks.length?done+' de '+tasks.length+' cumplidos':''}</span></div>
-        ${tasksHtml}
+        <div class="lbl">Tareas de soporte <span class="cnt">${inits.length?initDone+' de '+inits.length+' hechas':''}</span></div>
+        ${initsHtml}
       </div>
+      ${tasks.length?`<div class="dsec">
+        <div class="lbl">Compromisos <span class="cnt">${done+' de '+tasks.length+' cumplidos'}</span></div>
+        ${tasksHtml}
+      </div>`:''}
     </div>`;
   $('#detail').classList.add('open');
   detailOpen=true;

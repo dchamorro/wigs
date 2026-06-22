@@ -4,6 +4,7 @@ from openpyxl.utils import get_column_letter as col
 from openpyxl.chart import LineChart, Reference
 from openpyxl.formatting.rule import Rule
 from openpyxl.styles.differential import DifferentialStyle
+from openpyxl.worksheet.datavalidation import DataValidation
 from datetime import date, timedelta
 
 ARIAL = 'Arial'
@@ -376,6 +377,56 @@ def build_year_tab(b):
 
 year_lasts = {b['tab']: build_year_tab(b) for b in BACKLOG_YEARS}
 
+# ---------- Tareas de soporte (por lead) ----------
+# Tabla plana editable: cada fila es una tarea/iniciativa concreta que sostiene
+# un lead measure específico. WIG = número de pestaña (1–12), Lead = 1–8. El
+# marcador la lee por posición A–E y la muestra en el detalle de cada lead.
+# Los dueños agregan filas en la copia compartida; los desplegables evitan
+# números fuera de rango. La semilla documenta el formato con ejemplos reales.
+TAREAS_SEED = [
+    (1, 3, 'Presentar la oferta Smart User a 100 clientes en 2026', 'Pre-Sales', 'En curso'),
+    (1, 1, 'Certificarse como Apple Authorized Service Provider para reparar equipos con mayor eficiencia', 'Del - DEX', 'Pendiente'),
+    (1, 5, 'Mantener siempre 50 equipos en bodega listos para colocar', 'Del - DEX', 'En curso'),
+]
+TAREAS_ROWS = 120  # filas de entrada disponibles para los dueños
+
+def build_tareas_tab():
+    ws = wb.create_sheet('Tareas')
+    ws.sheet_view.showGridLines = False
+    ws['G1'] = ('Tareas de soporte por lead: cada fila es una acción concreta que sostiene un '
+                'lead measure. WIG = número de pestaña (1–12), Lead = 1–8. Aparecen en el detalle '
+                'del lead en el televisor. Estado: Pendiente · En curso · Hecho.')
+    ws['G1'].font = Font(name=ARIAL, size=9, italic=True, color='808080'); ws['G1'].alignment = WRAP
+    hdrs = ['WIG', 'Lead', 'Tarea', 'Responsable', 'Estado']
+    for c, h in enumerate(hdrs, 1):
+        cell = ws.cell(row=1, column=c, value=h)
+        cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
+    last = 1 + TAREAS_ROWS
+    # desplegables (validación) para WIG, Lead y Estado
+    dv_wig = DataValidation(type='list', formula1='"%s"' % ','.join(str(i) for i in range(1, len(WIGS) + 1)), allow_blank=True)
+    dv_lead = DataValidation(type='list', formula1='"%s"' % ','.join(str(i) for i in range(1, MAX_LEADS + 1)), allow_blank=True)
+    dv_est = DataValidation(type='list', formula1='"Pendiente,En curso,Hecho"', allow_blank=True)
+    for dv in (dv_wig, dv_lead, dv_est): ws.add_data_validation(dv)
+    dv_wig.add(f'A2:A{last}'); dv_lead.add(f'B2:B{last}'); dv_est.add(f'E2:E{last}')
+    for i in range(TAREAS_ROWS):
+        r = 2 + i
+        seed = TAREAS_SEED[i] if i < len(TAREAS_SEED) else (None,) * 5
+        for c in range(1, 6):
+            cell = ws.cell(row=r, column=c, value=seed[c - 1])
+            cell.border = BORDER; cell.font = F_INPUT
+            cell.alignment = CENTER if c in (1, 2, 5) else WRAP
+            if i % 2 == 1 and cell.value is None: cell.fill = FILL_GREY
+    # color de Estado: Hecho = verde · En curso = amarillo · Pendiente = rojo
+    for txt, dxf in (('Hecho', GREEN_DXF), ('En curso', YEL_DXF), ('Pendiente', RED_DXF)):
+        ws.conditional_formatting.add(f'E2:E{last}', Rule(type='containsText', operator='containsText',
+            text=txt, dxf=dxf, formula=[f'NOT(ISERROR(SEARCH("{txt}",E2)))']))
+    ws.freeze_panes = 'A2'
+    for cl, wd in {'A': 6, 'B': 6, 'C': 72, 'D': 22, 'E': 12}.items():
+        ws.column_dimensions[cl].width = wd
+    return last
+
+build_tareas_tab()
+
 # ---------- Dashboard ----------
 ws = dash
 ws.sheet_view.showGridLines = False
@@ -517,6 +568,11 @@ lines = [
     ('• Los leads L1 y L2 son la apuesta principal: ahí el equipo rinde cuentas con compromisos semanales. L3–L8 son indicadores de apoyo que explican el resultado.', F_TXT),
     ('• El % de cada lead se calcula automáticamente contra su meta. Dejar la meta vacía desactiva el lead ("(Disponible)").', F_TXT),
     ('• Definan todos los leads en positivo (más = mejor) para que el % se lea igual en todos.', F_TXT),
+    ('', None),
+    ('TAREAS DE SOPORTE (pestaña «Tareas»):', F_LBL),
+    ('• Cada fila es una acción concreta que sostiene un lead measure: WIG (1–12), Lead (1–8), la tarea, el responsable y el estado.', F_TXT),
+    ('• Usen los desplegables de las columnas WIG, Lead y Estado (Pendiente · En curso · Hecho) para no salirse de rango.', F_TXT),
+    ('• Aparecen en el televisor al tocar el lead correspondiente (sección «Tareas de soporte» del detalle).', F_TXT),
     ('', None),
     ('CÓDIGO DE COLORES:', F_LBL),
     ('• Texto AZUL = celdas de entrada. Texto NEGRO = fórmulas (no tocar). Texto VERDE = vínculos entre pestañas.', F_TXT),
