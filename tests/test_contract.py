@@ -27,7 +27,7 @@ def wb():
     return load_workbook(WB_PATH, data_only=False)
 
 
-NO_WIG = ('Dashboard', 'Instrucciones', 'Compromisos')
+NO_WIG = ('Dashboard', 'Instrucciones', 'Compromisos', 'Tareas')
 
 
 def is_year_page(name):
@@ -36,7 +36,7 @@ def is_year_page(name):
 
 
 def is_support(name):
-    """No es una pestaña de WIG (Dashboard/Instrucciones/Compromisos o página por año)."""
+    """No es una pestaña de WIG (Dashboard/Instrucciones/Compromisos/Tareas o página por año)."""
     return name in NO_WIG or is_year_page(name)
 
 
@@ -96,6 +96,22 @@ def test_compromisos_layout():
         f'Compromisos: encabezados inesperados {hdrs} — el parser del marcador los lee por posición A–F'
 
 
+def test_tareas_layout():
+    """Tareas (tareas de soporte por lead): tabla plana A:E con encabezados fijos
+    en fila 1; el parser del marcador la lee por posición A–E (WIG, Lead, Tarea,
+    Responsable, Estado). El build la genera siempre."""
+    book = wb()
+    assert 'Tareas' in book.sheetnames, 'falta la pestaña Tareas'
+    ws = book['Tareas']
+    hdrs = [ws.cell(row=1, column=c).value for c in range(1, 6)]
+    assert hdrs == ['WIG', 'Lead', 'Tarea', 'Responsable', 'Estado'], \
+        f'Tareas: encabezados inesperados {hdrs} — el parser los lee por posición A–E'
+    # la semilla deja al menos una fila de ejemplo con WIG/Lead/Tarea
+    assert ws.cell(row=2, column=1).value is not None, 'Tareas: falta WIG en A2'
+    assert ws.cell(row=2, column=2).value is not None, 'Tareas: falta Lead en B2'
+    assert ws.cell(row=2, column=3).value, 'Tareas: falta Tarea en C2'
+
+
 def test_dashboard_layout():
     ws = wb()['Dashboard']
     # Trayectoria NAT: 4 años desde fila 6 (2026–2029)
@@ -135,7 +151,7 @@ def test_html_parser_matches():
     assert os.path.exists(HTML_PATH), f'falta {HTML_PATH}'
     html = open(HTML_PATH, encoding='utf-8').read()
     for anchor in ("g('B2')", "g('B4')", "g('B5')", "g('E10')", "g('B'+r)",
-                   "g('C19')", "encode_col(8+2*k)", "'Compromisos'"):
+                   "g('C19')", "encode_col(8+2*k)", "'Compromisos'", "'Tareas'", "parseTareas"):
         assert anchor in html, f'parser: ancla {anchor} no encontrada — contrato roto'
     assert "const CONFIG = { DATA_URL: ''" in html, (
         'falta la línea CONFIG exacta — el workflow de Azure parchea esa cadena literal')

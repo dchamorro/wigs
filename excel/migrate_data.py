@@ -23,7 +23,7 @@ from openpyxl import load_workbook
 
 DATA0 = 11
 MAX_LEADS = 8
-SKIP = {'Dashboard', 'Instrucciones', 'Compromisos'}
+SKIP = {'Dashboard', 'Instrucciones', 'Compromisos', 'Tareas'}
 
 
 def is_year_page(name):
@@ -127,6 +127,22 @@ def main(old_path, new_path, out_path):
                     nc.cell(row=r, column=c, value=v)
             moved += 1
         report.append(f'  Compromisos: {moved} filas migradas')
+
+    # Tareas: copia plana de filas digitadas (A2:E...) — tareas de soporte por lead.
+    # El viejo manda: limpia la semilla de ejemplo del nuevo y pega las reales.
+    if 'Tareas' in old.sheetnames and 'Tareas' in new.sheetnames:
+        ot, nt = old['Tareas'], new['Tareas']
+        for r in range(2, nt.max_row + 1):
+            for c in range(1, 6):
+                nt.cell(row=r, column=c, value=None)
+        moved = 0
+        for r in range(2, ot.max_row + 1):
+            if all(ot.cell(row=r, column=c).value is None for c in range(1, 6)):
+                continue
+            for c in range(1, 6):
+                nt.cell(row=2 + moved, column=c, value=ot.cell(row=r, column=c).value)
+            moved += 1
+        report.append(f'  Tareas: {moved} filas migradas')
 
     # Páginas por año (2027/2028/2029): GP comprometido (col B) emparejado por
     # fecha (col A, desde fila 12) y el GP% supuesto (E4) si el dueño lo cambió.
