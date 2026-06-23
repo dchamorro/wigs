@@ -75,18 +75,36 @@ El dispositivo **rota** entre varias pantallas (mocks 800×480, 1-bit):
    privada con login. En producción, una tabla `Incentivos` (por persona:
    período, pesos, % por componente) alimentaría esta pantalla — sin cifras de pago.
 
-Se rasteriza
-con `cairosvg web/trmnl_card_demo.svg trmnl_card.png` (o `python3 -c "import
-cairosvg; cairosvg.svg2png(url='web/trmnl_card_demo.svg', write_to='card.png')"`).
 Reglas de diseño e-ink: solo negro sobre blanco, sin grises; el semáforo es
 glifo (● en meta · ◐ riesgo · ○ atrasado), no color; tipografía grande y legible.
 
-Datos de ejemplo sembrados en la base para el mock: colaboradora **María José
-Selva** (Pre-Sales), Líder de WIG 1 y WIG 5, con 3 compromisos de la semana 22.
+### Render dirigido por datos
 
-Pendiente para producción: el render por-persona (servido por LAN desde el PGX,
-BYOS de TRMNL) que toma estos datos y emite un PNG/HTML 800×480 por `TRMNL ID`.
-Cada dispositivo se configura como *private plugin* (polling) apuntando al PGX.
+`scripts/trmnl_render.py` convierte esos mocks estáticos en un render por-persona:
+dado un *bundle* normalizado (la persona, sus WIG como líder con sus lead measures,
+compromisos, el WIG de compañía y su incentivo) emite las **4 tarjetas** SVG
+800×480 (y PNG con `--png` si hay `cairosvg`). La aritmética de barras y los glifos
+se generan desde los datos; el layout reproduce los mocks.
+
+```bash
+make trmnl                              # usa el fixture de ejemplo (María José)
+make trmnl INPUT=mi_bundle.json PNG=1   # otra persona, con PNG (necesita cairosvg)
+```
+
+El fixture `scripts/trmnl_sample.json` reproduce el mock (colaboradora **María
+José Selva**, Pre-Sales, Líder de WIG 1 y WIG 5, 3 compromisos de la semana 22) y
+sirve de contrato visual; `tests/test_trmnl.py` lo valida (parte de `make test`).
+
+**Fuente de datos (adaptadores en `trmnl_render.py`):**
+- `from_json(path)` — fuente de trabajo y de pruebas (el fixture de arriba).
+- `from_airtable(base_id, token, trmnl_id)` — **pendiente** (stub documentado):
+  ubicar la persona por `TRMNL ID` en `Colaboradores`, leer sus WIG donde es
+  `Líder` + últimas *Readings* + sus `Compromisos` de la semana + `Years`/backlog
+  para la tarjeta de compañía, con el mismo cálculo de estado que `build_wig.py`.
+
+Pendiente para producción: implementar `from_airtable` y el servidor por LAN desde
+el PGX (BYOS de TRMNL) que sirva un PNG/HTML por `TRMNL ID`; cada dispositivo se
+configura como *private plugin* (polling) apuntando al PGX.
 
 ## Pendiente (sync)
 

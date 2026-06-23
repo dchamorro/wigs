@@ -1,0 +1,103 @@
+{
+  "person": {
+    "name": "María José Selva",
+    "area": "Pre-Sales",
+    "org": "GBM Nicaragua",
+    "trmnl_id": "maria-jose"
+  },
+  "week": {
+    "num": 22,
+    "date_label": "lun 22 jun 2026",
+    "updated_label": "Actualizado lun 8:00 · vía PGX (LAN)"
+  },
+  "marcador": {
+    "wigs": [
+      {
+        "num": 1,
+        "name": "Smart User 500",
+        "status": "riesgo",
+        "leads": [
+          {"slot": "L1", "name": "Cartas de asignación firmadas", "real": 14, "meta": 20, "status": "atrasado"},
+          {"slot": "L2", "name": "Demos / POCs activos", "real": 2, "meta": 2, "status": "meta"}
+        ]
+      },
+      {
+        "num": 5,
+        "name": "MV Datacenter",
+        "status": "meta",
+        "leads": [
+          {"slot": "L1", "name": "Propuestas de servicios DC", "real": 3, "meta": 2, "status": "meta"},
+          {"slot": "L2", "name": "Workloads aprovisionados", "real": 1, "meta": 1, "status": "meta"}
+        ]
+      }
+    ],
+    "compromisos": [
+      {"text": ["Cotizar 30 equipos del pipeline", "Smart User"], "tag": "WIG 1 · L4 · HECHO", "done": true},
+      {"text": ["Cerrar 5 cartas de asignación", "con Promerica"], "tag": "WIG 1 · L1 · PENDIENTE", "done": false},
+      {"text": ["Presentar propuesta de servicios", "DC a Banpro"], "tag": "WIG 5 · L1 · PENDIENTE", "done": false}
+    ]
+  },
+  "company": {
+    "subtitle": "Generar $1,000,000 de utilidad neta (NAT) en 2027",
+    "nat_year": 2027,
+    "nat_meta_label": "$1,000,000",
+    "backlog": {
+      "pct": 38,
+      "covered_label": "$1.28M de $3.36M de GP meta",
+      "gap_label": "Falta vender (brecha): $2.08M"
+    },
+    "trajectory": [
+      {"year": 2027, "value_m": 1.0, "label": "$1.0M"},
+      {"year": 2028, "value_m": 2.0, "label": "$2.0M"},
+      {"year": 2029, "value_m": 2.445, "label": "$2.4M"}
+    ],
+    "notes": [
+      "Ingreso 2027: $21.0M · GP meta 16%",
+      "El piso de impuesto (3% s/ventas) se gana",
+      "en GP% y costo local plano, no solo ventas."
+    ],
+    "rally": "4DX · Todos remamos hacia la misma meta"
+  },
+  "team": {
+    "wig_num": 1,
+    "wig_name": "Smart User 500",
+    "wig_teams": "Pre-Sales, Del - DEX",
+    "lag": {
+      "caption": "EQUIPOS COLOCADOS (ACUMULADO)",
+      "real": 142,
+      "meta": 500,
+      "status": "riesgo",
+      "note": "28% de la meta · plan a la sem. 22: 180 → 79%"
+    },
+    "trend": [72, 88, 103, 114, 121, 129, 134, 142],
+    "trend_start": "s15",
+    "trend_end": "s22 · 142",
+    "compromisos": {
+      "done": 5,
+      "total": 7,
+      "by_person": [
+        {"name": "María J. Selva", "done": 2, "total": 3},
+        {"name": "Equipo Pre-Sales (4)", "done": 3, "total": 4}
+      ]
+    },
+    "apuesta": [
+      {"slot": "L1", "name": "Cartas firmadas", "real": 14, "meta": 20, "status": "atrasado"},
+      {"slot": "L2", "name": "Demos / POCs activos", "real": 2, "meta": 2, "status": "meta"}
+    ],
+    "owner_note": "Dueño: por asignar · cadencia lunes 9:00"
+  },
+  "incentive": {
+    "period": "Q2 2026",
+    "cut_label": "corte sem. 22",
+    "pct": 64,
+    "status": "riesgo",
+    "status_note": "En ritmo para cerrar el trimestre",
+    "projection": "~85% del objetivo",
+    "components": [
+      {"label": "Lead measures de mi equipo", "pct": 79, "note": "WIG 1 & 5 · peso 50%"},
+      {"label": "Cumplimiento de compromisos", "pct": 71, "note": "semana a semana · peso 30%"},
+      {"label": "Avance WIG de compañía (NAT)", "pct": 38, "note": "cobertura de backlog · peso 20%"}
+    ],
+    "weighted_note": "Ponderado → 64% del objetivo"
+  }
+}
