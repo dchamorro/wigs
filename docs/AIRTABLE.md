@@ -68,7 +68,12 @@ El dispositivo **rota** entre varias pantallas (mocks 800×480, 1-bit):
 1. `web/trmnl_card_demo.svg` — **Mi marcador**: mis lead measures + mis compromisos.
 2. `web/trmnl_card_company.svg` — **WIG de Compañía**: meta NAT $1M + cobertura de backlog + trayectoria 2027-2029 (igual para todos; alineación 4DX).
 3. `web/trmnl_card_team.svg` — **Mi equipo**: lag acumulado del WIG, tendencia 8 semanas y tablero de compromisos del equipo (rendición de cuentas).
-4. _Compensación / incentivo_ — pendiente de decisión de privacidad (ver abajo).
+4. `web/trmnl_card_incentive.svg` — **Mi incentivo**: progreso del variable hacia
+   el objetivo, **solo en relativo (sin montos)**, descompuesto por driver
+   (lead measures / compromisos / WIG de compañía). Decisión de privacidad: nunca
+   montos en la pantalla siempre-encendida; el detalle de pago va en una app
+   privada con login. En producción, una tabla `Incentivos` (por persona:
+   período, pesos, % por componente) alimentaría esta pantalla — sin cifras de pago.
 
 Se rasteriza
 con `cairosvg web/trmnl_card_demo.svg trmnl_card.png` (o `python3 -c "import
