@@ -10,6 +10,7 @@ pip install openpyxl            # y LibreOffice para recalc
 make build                      # construye el tablero
 make demo && open dist/demo.html  # ver el marcador con datos dummy
 make test                       # validar el contrato
+make pdf                         # PDF de resumen del proyecto (stack + próximos pasos)
 ```
 
 ## Producción

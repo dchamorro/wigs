@@ -19,6 +19,9 @@ test:
 trmnl:
 	$(PY) scripts/trmnl_render.py --input $(INPUT) --out dist/trmnl $(if $(PNG),--png,)
 
+pdf:
+	$(PY) scripts/build_overview_pdf.py dist/Marcador_WIG_4DX_Overview.pdf
+
 migrate: build
 	@test -n "$(OLD)" || (echo "Uso: make migrate OLD=/ruta/tablero_con_datos.xlsx" && exit 1)
 	$(PY) excel/migrate_data.py "$(OLD)" $(XLSX) dist/Tablero_migrado.xlsx
@@ -48,4 +51,4 @@ publicar:
 		|| git commit -m "data: tablero semanal $$(date +%Y-%m-%d)" -- web/tablero.xlsx
 	git push
 
-.PHONY: build demo test trmnl migrate deploy publicar airtable airtable-dry
+.PHONY: build demo test trmnl pdf migrate deploy publicar airtable airtable-dry
