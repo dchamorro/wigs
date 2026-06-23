@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="800" height="480" fill="#ffffff"/>
+  <rect x="6" y="6" width="788" height="468" rx="6" fill="none" stroke="#000" stroke-width="3"/>
+
+  <!-- Encabezado -->
+  <text x="24" y="44" font-size="28" font-weight="bold">WIG de Compañía</text>
+  <text x="24" y="65" font-size="14">Generar $1,000,000 de utilidad neta (NAT) en 2027</text>
+  <text x="776" y="36" font-size="17" font-weight="bold" text-anchor="end">SEMANA 22</text>
+  <text x="776" y="58" font-size="14" text-anchor="end">lun 22 jun 2026</text>
+  <line x1="16" y1="78" x2="784" y2="78" stroke="#000" stroke-width="2"/>
+  <line x1="474" y1="88" x2="474" y2="446" stroke="#000" stroke-width="1"/>
+
+  <!-- Hero NAT + cobertura (izquierda) -->
+  <text x="24" y="106" font-size="13" font-weight="bold" letter-spacing="1.2">META DE UTILIDAD NETA 2027</text>
+  <text x="24" y="156" font-size="46" font-weight="bold">$1,000,000</text>
+  <text x="24" y="178" font-size="14">Utilidad neta después de impuestos (NAT)</text>
+
+  <text x="24" y="222" font-size="13" font-weight="bold" letter-spacing="1.2">BACKLOG GP 2027 · COMPROMETIDO</text>
+  <text x="24" y="262" font-size="34" font-weight="bold">38%</text>
+  <text x="120" y="262" font-size="16">cubierto</text>
+  <rect x="24" y="276" width="420" height="16" fill="#fff" stroke="#000" stroke-width="1.4"/>
+  <rect x="24" y="276" width="160" height="16" fill="#000"/>
+  <text x="24" y="314" font-size="14">$1.28M de $3.36M de GP meta</text>
+  <text x="24" y="334" font-size="14">Falta vender (brecha): $2.08M</text>
+
+  <!-- Trayectoria 2027-2029 (derecha) -->
+  <text x="486" y="106" font-size="13" font-weight="bold" letter-spacing="1.2">TRAYECTORIA PLURIANUAL (NAT)</text>
+
+  <text x="486" y="150" font-size="15" font-weight="bold">2027</text>
+  <rect x="556" y="138" width="75" height="16" fill="#000"/>
+  <text x="639" y="151" font-size="14" font-weight="bold">$1.0M</text>
+
+  <text x="486" y="196" font-size="15" font-weight="bold">2028</text>
+  <rect x="556" y="184" width="150" height="16" fill="#000"/>
+  <text x="714" y="197" font-size="14" font-weight="bold">$2.0M</text>
+
+  <text x="486" y="242" font-size="15" font-weight="bold">2029</text>
+  <rect x="556" y="230" width="184" height="16" fill="#000"/>
+  <text x="748" y="243" font-size="14" font-weight="bold">$2.4M</text>
+
+  <text x="486" y="300" font-size="13">Ingreso 2027: $21.0M · GP meta 16%</text>
+  <text x="486" y="322" font-size="13">El piso de impuesto (3% s/ventas) se gana</text>
+  <text x="486" y="342" font-size="13">en GP% y costo local plano, no solo ventas.</text>
+
+  <!-- Pie -->
+  <line x1="16" y1="452" x2="784" y2="452" stroke="#000" stroke-width="1"/>
+  <text x="24" y="468" font-size="11">Actualizado lun 8:00 · vía PGX (LAN)</text>
+  <text x="776" y="468" font-size="11" text-anchor="end" font-weight="bold">4DX · Todos remamos hacia la misma meta</text>
+</svg>

@@ -22,6 +22,14 @@ deploy:
 	@test -n "$(PGX)" || (echo "Uso: make deploy PGX=usuario@ip" && exit 1)
 	scp web/marcador.html $(PGX):/var/www/html/wig/marcador.html
 
+airtable:
+	@test -n "$$AIRTABLE_TOKEN" || (echo "Falta AIRTABLE_TOKEN (PAT: schema.bases:write + data.records:write)" && exit 1)
+	@test -n "$$AIRTABLE_BASE_ID" || (echo "Falta AIRTABLE_BASE_ID (la base 'WIGS' que creaste)" && exit 1)
+	$(PY) excel/build_airtable.py
+
+airtable-dry:
+	$(PY) excel/build_airtable.py --dry-run
+
 publicar:
 	@test -n "$(DATOS)" || (echo "Uso: make publicar DATOS=/ruta/tablero_con_datos.xlsx" && exit 1)
 	@test "$$(git branch --show-current)" = "main" || (echo "Publicar solo desde main (el workflow de Azure no corre en otras ramas)" && exit 1)
@@ -34,4 +42,4 @@ publicar:
 		|| git commit -m "data: tablero semanal $$(date +%Y-%m-%d)" -- web/tablero.xlsx
 	git push
 
-.PHONY: build demo test migrate deploy publicar
+.PHONY: build demo test migrate deploy publicar airtable airtable-dry
