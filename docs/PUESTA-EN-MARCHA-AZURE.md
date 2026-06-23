@@ -6,16 +6,19 @@ Plans & Controls (cada lunes).
 
 **La idea en una frase:** los dueños siguen digitando en el Excel compartido
 (`\\PGX\WIG`) como siempre; cada lunes una persona publica ese archivo con un
-comando, y las pantallas de la oficina muestran el marcador actualizado desde
-una página web que solo se ve desde la red de la oficina.
+comando, y queda disponible para **acceso remoto autenticado** (login de empresa,
+solo cuentas `@caobagroup.com`). La TV de la oficina NO usa este sitio: lee del
+PGX por LAN sin login (ver `deploy/setup-wig.sh`); Azure es la copia para verlo
+fuera de la oficina con cuenta de empresa.
 
 ---
 
 ## Parte 1 — Puesta en marcha (una sola vez, ~30 min)
 
-### Paso 1. Mergear el PR pendiente
-El PR #2 (`dchamorro/wigs`) contiene el workflow de publicación, el comando
-semanal y la restricción por IP.
+### Paso 1. Tener el workflow en `main`
+El repo (`dchamorro/wigs`) ya trae el workflow de publicación
+(`.github/workflows/azure-static-web-apps.yml`), el comando semanal y el login
+de empresa (Entra ID) en `web/staticwebapp.config.json`.
 
 ### Paso 2. Crear el sitio en Azure (~10 min)
 1. Entrar a [portal.azure.com](https://portal.azure.com) → **Create a resource**
@@ -24,8 +27,8 @@ semanal y la restricción por IP.
    - **Subscription / Resource group:** la suscripción con el crédito; crear
      grupo `rg-marcador-wig` si no existe.
    - **Name:** `marcador-wig` (o similar).
-   - **Hosting plan:** **Standard** (≈ $9/mes — necesario para la restricción
-     por IP; sale del crédito de $200).
+   - **Hosting plan:** **Standard** (≈ $9/mes — necesario para el login de
+     empresa con Entra ID; sale del crédito de $200).
    - **Source:** GitHub → repo `dchamorro/wigs`, rama `main`.
    - **Build presets:** *Custom*; app location `/`; output vacío.
 3. Crear. Azure conecta el repo y agrega solo el secret
@@ -36,15 +39,16 @@ semanal y la restricción por IP.
 5. Anotar la URL del sitio (algo como `https://<nombre>.azurestaticapps.net`),
    visible en el Overview del recurso.
 
-### Paso 3. Configurar la IP de la oficina (~5 min)
-1. Desde cualquier máquina **en la oficina**, visitar
-   [whatismyip.com](https://www.whatismyip.com) y anotar la IP pública.
-2. En `web/staticwebapp.config.json`, reemplazar `REEMPLAZAR-IP-OFICINA` por
-   esa IP (queda `"x.x.x.x/32"`). Si la oficina tiene más de una salida a
-   internet, agregar cada una al array.
+### Paso 3. Configurar el login de empresa (Entra ID, ~10 min)
+1. Registrar la app en Entra ID (un solo tenant, solo `@caobagroup.com`) y
+   obtener el **TENANT_ID**, el **CLIENT_ID** y un **CLIENT_SECRET**. Pasos
+   detallados del portal en [`AZURE_LOGIN.md`](./AZURE_LOGIN.md).
+2. En `web/staticwebapp.config.json`, reemplazar `REEMPLAZAR-TENANT-ID` en el
+   `openIdIssuer` por el tenant real. En la Static Web App, agregar los secrets
+   de aplicación `AAD_CLIENT_ID` y `AAD_CLIENT_SECRET`.
 3. Commit y push a `main`. (El workflow se niega a publicar mientras el
-   placeholder siga ahí — es a propósito, para que el sitio nunca salga sin
-   restricción.)
+   placeholder `REEMPLAZAR-TENANT-ID` siga ahí — es a propósito, para que el
+   sitio nunca salga con el login mal configurado.)
 
 ### Paso 4. Preparar la máquina que publica (~10 min, la de P&C)
 Requisitos: acceso al repo en GitHub, git configurado, Python 3.
@@ -56,18 +60,20 @@ pip install openpyxl
 ### Paso 5. Primera publicación y verificación
 1. Copiar el tablero con datos desde `\\PGX\WIG` a la máquina.
 2. `make publicar DATOS=/ruta/al/tablero.xlsx`
-3. Esperar ~1 minuto y abrir la URL del sitio **desde la oficina**: debe
-   verse el marcador con datos, cargado solo (sin arrastrar nada).
-4. Probar desde fuera de la oficina (datos del celular): debe dar **403**.
-   Si no da 403, revisar que el Hosting plan sea Standard y la IP correcta.
+3. Esperar ~1 minuto y abrir la URL del sitio: debe redirigir al **login de
+   empresa**. Iniciar sesión con una cuenta `@caobagroup.com` → se ve el
+   marcador con datos, cargado solo (sin arrastrar nada).
+4. Probar con una cuenta que NO sea `@caobagroup.com` (o sin sesión): el sitio
+   **niega el acceso / redirige al login** y no muestra datos. Si deja entrar a
+   cualquiera, revisar que el Hosting plan sea Standard y que `auth` +
+   `allowedRoles: ["authenticated"]` estén bien en `staticwebapp.config.json`.
 
 ### Paso 6. Las pantallas
-En cada display de la oficina, abrir la URL en modo kiosko:
-```
-chrome --kiosk https://<nombre>.azurestaticapps.net
-```
-Nada más: sin login, sin cuentas. La página refresca los datos sola cada
-10 minutos y rota entre los WIGs.
+La TV de la oficina **no** usa este sitio: corre `marcador.html` servido por el
+PGX en la LAN (sin login), configurado con `deploy/setup-wig.sh`. Azure es para
+acceso remoto: cada persona abre la URL en su navegador e inicia sesión con su
+cuenta de empresa. La página refresca los datos sola cada 10 minutos y rota
+entre los WIGs.
 
 ---
 
@@ -105,17 +111,19 @@ de la reunión WIG.
 ### Si el sitio no se actualiza
 1. Revisar la pestaña **Actions** del repo en GitHub — el workflow del deploy
    debe estar en verde. Si está rojo, el mensaje de error dice qué pasó
-   (token vencido, IP placeholder, etc.).
+   (token vencido, placeholder `REEMPLAZAR-TENANT-ID` sin reemplazar, etc.).
 2. Refrescar la página con Ctrl+Shift+R (aunque los headers ya evitan caché).
 
 ---
 
 ## Mantenimiento ocasional
 
-- **Cambió la IP de la oficina** (cambio de ISP/router): los displays verán
-  403. Actualizar la IP en `web/staticwebapp.config.json` y pushear.
-- **Agregar una pantalla:** solo abrir la URL en la pantalla (si está en la
-  red de la oficina, funciona).
+- **Vencimiento del CLIENT_SECRET de Entra:** los secrets de Entra ID expiran
+  (1–2 años). Cuando el login deje de funcionar, generar un secret nuevo en el
+  registro de la app y actualizar `AAD_CLIENT_SECRET` en la Static Web App.
+- **Dar acceso remoto a alguien:** basta con que tenga cuenta `@caobagroup.com`;
+  abre la URL e inicia sesión. Para la TV de la oficina no se toca nada (lee del
+  PGX por LAN, sin login).
 - **Costo:** ~$9/mes (tier Standard), contra el crédito de $200/mes.
 - **El PGX no cambia:** sigue siendo donde viven el Excel compartido y la
   digitación de los dueños. La ruta nginx del PGX para la TV local puede

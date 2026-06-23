@@ -20,11 +20,13 @@ make test                       # validar el contrato
 ## Publicación en Azure (pantallas de la oficina)
 
 El marcador se publica en Azure Static Web Apps con los datos incluidos.
-**Decisión de seguridad:** el sitio está restringido por IP a la red de la
-oficina (`networking.allowedIpRanges` en `web/staticwebapp.config.json`) —
-solo las pantallas/equipos en la oficina pueden verlo. Es la misma frontera
-de confianza que el PGX en la LAN. Requiere el tier **Standard** (~$9/mes,
-cubierto por el crédito de Azure).
+**Decisión de seguridad:** el sitio exige **login de empresa** (Entra ID de un
+solo tenant; solo cuentas `@caobagroup.com`) vía `auth` en
+`web/staticwebapp.config.json` — todo el contenido (`marcador.html`,
+`tablero.xlsx`) está detrás de `allowedRoles: ["authenticated"]`. La TV de la
+oficina NO usa este sitio: lee del PGX por LAN sin login; Azure es la copia
+para acceso remoto autenticado. Requiere el tier **Standard** (~$9/mes,
+cubierto por el crédito de Azure). Setup del portal: `docs/AZURE_LOGIN.md`.
 
 **Ritual del lunes (1 persona, Plans & Controls):**
 ```
@@ -42,7 +44,8 @@ guardado desde Excel (la copia de `\\PGX\WIG` ya cumple).
 2. Azure agrega el secret `AZURE_STATIC_WEB_APPS_API_TOKEN` al repo. Si Azure
    genera su propio workflow, borrarlo — ya existe
    `.github/workflows/azure-static-web-apps.yml`.
-3. Poner la IP pública de la oficina en `web/staticwebapp.config.json`
-   (reemplazar `REEMPLAZAR-IP-OFICINA`). El workflow se niega a deployar
-   mientras quede el placeholder. Si la oficina tiene varias salidas a
-   internet, agregar cada una al array.
+3. Registrar la app en Entra ID y poner el **TENANT_ID** en el `openIdIssuer`
+   de `web/staticwebapp.config.json` (reemplazar `REEMPLAZAR-TENANT-ID`), más
+   los secrets `AAD_CLIENT_ID` / `AAD_CLIENT_SECRET` en la Static Web App. El
+   workflow se niega a deployar mientras quede el placeholder. Pasos del portal
+   en `docs/AZURE_LOGIN.md`.
