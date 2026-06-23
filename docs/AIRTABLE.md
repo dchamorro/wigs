@@ -58,13 +58,24 @@ nacen vacías (las llenan los dueños cada lunes).
 **En negrita** = celdas de entrada (lo que se digita). Todo lo demás es
 estructura o se calcula en el Excel tras el sync.
 
-## TRMNL (pantallas de escritorio) — preparado, no construido
+## TRMNL (pantallas de escritorio)
 
-`Colaboradores` (con `TRMNL ID`) y `Compromisos` (con `Responsable`) existen
-para alimentar pantallas e-ink TRMNL por escritorio: arriba el estado de las
-lead measures del equipo de la persona, abajo sus compromisos de la semana.
-Pendiente: un render por-persona de 800×480 (mono) servido por LAN desde el PGX
-(BYOS de TRMNL). Ver discusión en el historial; el dato ya queda modelado.
+`Colaboradores` (con `TRMNL ID`) y `Compromisos` (con `Responsable`) alimentan
+pantallas e-ink TRMNL por escritorio: arriba el estado de las lead measures de
+los WIG donde la persona es **Líder**, abajo sus **compromisos** de la semana.
+
+Mock visual del layout (800×480, 1-bit): `web/trmnl_card_demo.svg`. Se rasteriza
+con `cairosvg web/trmnl_card_demo.svg trmnl_card.png` (o `python3 -c "import
+cairosvg; cairosvg.svg2png(url='web/trmnl_card_demo.svg', write_to='card.png')"`).
+Reglas de diseño e-ink: solo negro sobre blanco, sin grises; el semáforo es
+glifo (● en meta · ◐ riesgo · ○ atrasado), no color; tipografía grande y legible.
+
+Datos de ejemplo sembrados en la base para el mock: colaboradora **María José
+Selva** (Pre-Sales), Líder de WIG 1 y WIG 5, con 3 compromisos de la semana 22.
+
+Pendiente para producción: el render por-persona (servido por LAN desde el PGX,
+BYOS de TRMNL) que toma estos datos y emite un PNG/HTML 800×480 por `TRMNL ID`.
+Cada dispositivo se configura como *private plugin* (polling) apuntando al PGX.
 
 ## Pendiente (sync)
 
