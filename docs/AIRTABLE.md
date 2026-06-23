@@ -20,12 +20,16 @@ deja el contrato y el offline-first intactos.
 Airtable (no usa el conector MCP, así que no hay prompt de aprobación). Es
 idempotente: re-correrlo no duplica (salta tablas/registros por nombre).
 
+La base ya existe y está sembrada: **WIGS** = `appZ8gj9HvUsOBuvP` (creada vía MCP
+el 2026-06-23). El script de abajo es la versión reproducible/idempotente por
+REST: re-correrlo no duplica, así que sirve para re-sembrar o migrar a otra base.
+
 ```bash
 # 1. Crea un Personal Access Token en https://airtable.com/create/tokens
 #    Scopes: schema.bases:read, schema.bases:write, data.records:read, data.records:write
 #    Acceso: la base "WIGS" que creaste.
 export AIRTABLE_TOKEN=pat_xxx
-export AIRTABLE_BASE_ID=appXXXXXXXXXXXXXX   # ID de la base (lo ves en la URL o en la API)
+export AIRTABLE_BASE_ID=appZ8gj9HvUsOBuvP   # base "WIGS"
 
 make airtable-dry      # imprime el plan, no escribe (offline)
 make airtable          # crea las 9 tablas + siembra

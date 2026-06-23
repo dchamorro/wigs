@@ -1,8 +1,2 @@
-.DS_Store
-node_modules/
-.context/
-.gstack/
-
-# Artefactos de demo regenerables (make demo)
-dist/demo.html
-dist/demo_data.xlsx
+__pycache__/
+*.pyc
