@@ -64,7 +64,13 @@ estructura o se calcula en el Excel tras el sync.
 pantallas e-ink TRMNL por escritorio: arriba el estado de las lead measures de
 los WIG donde la persona es **Líder**, abajo sus **compromisos** de la semana.
 
-Mock visual del layout (800×480, 1-bit): `web/trmnl_card_demo.svg`. Se rasteriza
+El dispositivo **rota** entre varias pantallas (mocks 800×480, 1-bit):
+1. `web/trmnl_card_demo.svg` — **Mi marcador**: mis lead measures + mis compromisos.
+2. `web/trmnl_card_company.svg` — **WIG de Compañía**: meta NAT $1M + cobertura de backlog + trayectoria 2027-2029 (igual para todos; alineación 4DX).
+3. `web/trmnl_card_team.svg` — **Mi equipo**: lag acumulado del WIG, tendencia 8 semanas y tablero de compromisos del equipo (rendición de cuentas).
+4. _Compensación / incentivo_ — pendiente de decisión de privacidad (ver abajo).
+
+Se rasteriza
 con `cairosvg web/trmnl_card_demo.svg trmnl_card.png` (o `python3 -c "import
 cairosvg; cairosvg.svg2png(url='web/trmnl_card_demo.svg', write_to='card.png')"`).
 Reglas de diseño e-ink: solo negro sobre blanco, sin grises; el semáforo es
