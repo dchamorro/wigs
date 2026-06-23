@@ -1,5 +1,7 @@
 XLSX = dist/Tablero_WIG_4DX_GBM.xlsx
 PY = python3
+# bundle JSON para `make trmnl` (override: make trmnl INPUT=...)
+INPUT = scripts/trmnl_sample.json
 
 build:
 	$(PY) excel/build_wig.py $(XLSX)
@@ -12,6 +14,10 @@ demo: build
 
 test:
 	$(PY) tests/test_contract.py
+	$(PY) tests/test_trmnl.py
+
+trmnl:
+	$(PY) scripts/trmnl_render.py --input $(INPUT) --out dist/trmnl $(if $(PNG),--png,)
 
 migrate: build
 	@test -n "$(OLD)" || (echo "Uso: make migrate OLD=/ruta/tablero_con_datos.xlsx" && exit 1)
@@ -42,4 +48,4 @@ publicar:
 		|| git commit -m "data: tablero semanal $$(date +%Y-%m-%d)" -- web/tablero.xlsx
 	git push
 
-.PHONY: build demo test migrate deploy publicar airtable airtable-dry
+.PHONY: build demo test trmnl migrate deploy publicar airtable airtable-dry
