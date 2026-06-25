@@ -32,10 +32,11 @@ def is_year_page(name):
 
 
 def find_hitos(ws):
-    """Fila del rótulo 'Hitos' (bloque de metas binarias bajo los datos), o None."""
+    """Fila del rótulo del bloque de metas binarias bajo los datos
+    ('Temas puntuales' o el legado 'Hitos'), o None."""
     for r in range(DATA0, ws.max_row + 1):
         v = ws.cell(row=r, column=1).value
-        if isinstance(v, str) and v.strip().startswith('Hitos'):
+        if isinstance(v, str) and (v.strip().startswith('Temas puntual') or v.strip().startswith('Hitos')):
             return r
     return None
 

@@ -333,18 +333,18 @@ def build_wig_tab(w):
     ch.series[1].graphicalProperties.line.width = 28000
     ws.add_chart(ch, f'{col(last_lead_col + 2)}2')
 
-    # ---- Hitos: metas binarias con fecha objetivo (logro = sí/no) ----
+    # ---- Temas puntuales: metas binarias con fecha objetivo (logro = sí/no) ----
     # Bloque debajo de la tabla de datos. El parser lo localiza por el rótulo
-    # 'Hitos' en la col A tras el fin de los datos. Cols: A–D Hito (combinadas),
-    # E Lead (1–8, opcional), F Responsable, G Fecha objetivo, H Estado
-    # (Pendiente / En curso / Logrado). Lo digitan los dueños.
+    # 'Temas puntuales' en la col A tras el fin de los datos. Cols: A–D Tema
+    # (combinadas), E Lead (1–8, opcional), F Responsable, G Fecha objetivo,
+    # H Estado (Pendiente / En curso / Logrado). Lo digitan los dueños.
     hito0 = last + 2
     ws.merge_cells(start_row=hito0, start_column=1, end_row=hito0, end_column=last_lead_col)
     ws.cell(row=hito0, column=1,
-            value='Hitos — metas binarias con fecha objetivo (logro = sí/no)').font = F_SECT
+            value='Temas puntuales — metas binarias con fecha objetivo (logro = sí/no)').font = F_SECT
     hh = hito0 + 1
     ws.merge_cells(start_row=hh, start_column=1, end_row=hh, end_column=4)
-    for c, h in ((1, 'Hito'), (5, 'Lead'), (6, 'Responsable'), (7, 'Fecha objetivo'), (8, 'Estado')):
+    for c, h in ((1, 'Tema'), (5, 'Lead'), (6, 'Responsable'), (7, 'Fecha objetivo'), (8, 'Estado')):
         cell = ws.cell(row=hh, column=c, value=h)
         cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
     hr0, hr1 = hh + 1, hh + HITO_ROWS
@@ -632,9 +632,9 @@ for cl, wd in {'A': 5, 'B': 46, 'C': 16, 'D': 26, 'E': 11, 'F': 11, 'G': 11, 'H'
     ws.column_dimensions[cl].width = wd
 for i in range(len(WIGS)): ws.row_dimensions[R0 + 1 + i].height = 30
 
-# --- Hitos por WIG — metas binarias con fecha (Logrado / En curso / Pendiente) ---
+# --- Temas puntuales por WIG — metas binarias con fecha (Logrado / En curso / Pendiente) ---
 HR = R0 + len(WIGS) + 3   # deja una fila en blanco bajo la tabla de soporte
-ws.cell(row=HR, column=1, value='Hitos por WIG — metas binarias con fecha objetivo').font = F_SECT
+ws.cell(row=HR, column=1, value='Temas puntuales por WIG — metas binarias con fecha objetivo').font = F_SECT
 h_hdrs = ['#', 'WIG', 'Logrado', 'En curso', 'Pendiente', 'Próxima fecha']
 for c, h in enumerate(h_hdrs, 1):
     cell = ws.cell(row=HR + 1, column=c, value=h)

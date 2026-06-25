@@ -89,7 +89,7 @@ def main(inp, out):
     def find_hitos(s):
         for r in range(11, s.max_row+1):
             v = s.cell(row=r, column=1).value
-            if isinstance(v,str) and v.strip().startswith('Hitos'): return r
+            if isinstance(v,str) and (v.strip().startswith('Temas puntual') or v.strip().startswith('Hitos')): return r
         return None
     DEMO_CAPTURE = {  # (responsable que digita, fuente) — el equipo es E4 del WIG
         '2. MV Advisory':  ('M. Aguilar', 'Pipeline CRM (semanal)'),
