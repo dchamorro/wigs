@@ -1,4 +1,5 @@
 __pycache__/
 *.pyc
 dist/trmnl/
+dist/prod_preview/
 .gstack/
