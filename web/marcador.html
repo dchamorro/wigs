@@ -202,6 +202,18 @@ canvas{flex:1;width:100%;min-height:0}
 .capgrid{display:flex;flex-wrap:wrap;gap:1vw}
 .capgrid>div{flex:1 1 38%;background:var(--panel2);border:1px solid var(--line);border-radius:1vh;padding:1.1vh 1.2vw;font-size:1.9vh}
 .capgrid .caplbl{display:block;color:var(--faint);font-size:1.4vh;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4vh}
+/* slide agregado de Hitos (metas binarias) */
+.hgrid{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:min-content;gap:1.2vh 1.6vw;align-content:start;overflow:hidden}
+.hcard{display:flex;align-items:center;gap:1.2vw;background:var(--panel2);border:1px solid var(--line);border-left:.5vh solid var(--faint);border-radius:1.2vh;padding:1.3vh 1.4vw}
+.hcard.win{border-left-color:var(--win)} .hcard.risk{border-left-color:var(--risk)}
+.hicon{flex:none;width:4.4vh;height:4.4vh;min-width:30px;min-height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.1vh;font-weight:800;border:2px solid var(--faint);color:var(--faint)}
+.hicon.win{border-color:var(--win);color:var(--win);background:var(--win-bg)} .hicon.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
+.hbody{flex:1;min-width:0}
+.htext{font-size:2.1vh;font-weight:650;line-height:1.22}
+.hmeta{font-size:1.5vh;color:var(--faint);margin-top:.4vh}
+.hmeta b{color:var(--dim)}
+.hbadge{flex:none;padding:.3vh 1vw;border-radius:.8vh;font-size:1.3vh;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--faint);color:var(--faint);white-space:nowrap}
+.hbadge.win{border-color:var(--win);color:var(--win);background:var(--win-bg)} .hbadge.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
 @media (prefers-reduced-motion: reduce){.slide{transition:none}#detail,#dcard{transition:none}}
 /* pantallas táctiles: blancos de toque grandes */
 @media (pointer:coarse){
@@ -402,6 +414,7 @@ function parseWorkbook(wb){
           const fc=g('G'+rr), est=String(g('H'+rr)||'').trim();
           hitos.push({text:String(t), lead:num(g('E'+rr)), resp:String(g('F'+rr)||''),
             fecha: fc!=null ? (typeof fc==='number'?fmtDate(xlDate(fc)):String(fc)) : '',
+            fechaSort: typeof fc==='number'?fc:9e9,
             estado:est, done:/lograd|hech|done|complet|listo/i.test(est)});
         }
         break;
@@ -416,6 +429,18 @@ function parseWorkbook(wb){
   const tasks=parseCompromisos(wb);
   const inits=parseTareas(wb);
   out.forEach(w=>{ if(!w.company){ w.tasks=tasks[w.wigNum]||{}; w.initiatives=inits[w.wigNum]||{}; } });
+  // slide agregado de Hitos: todas las metas binarias con fecha, de todos los WIGs.
+  // Se inserta antes del primer WIG (orden: Compañía → años → Hitos → 12 WIGs).
+  const hitosAll=out.filter(w=>!w.company&&!w.yearPage&&w.hitos&&w.hitos.length)
+    .flatMap(w=>w.hitos.map(h=>({...h, wig:w.wigNum})));
+  if(hitosAll.length){
+    const done=hitosAll.filter(h=>h.done).length;
+    const curso=hitosAll.filter(h=>!h.done&&/curso|progres|marcha/i.test(h.estado)).length;
+    const at=out.findIndex(w=>!w.company&&!w.yearPage);
+    out.splice(at<0?out.length:at, 0, {hitosPage:true, company:false,
+      title:'Hitos — metas binarias con fecha objetivo', hitosAll,
+      done, curso, pend:hitosAll.length-done-curso, rows:[]});
+  }
   return out;
 }
 
@@ -636,6 +661,38 @@ function yearSlideHTML(w){
     <div class="leads cols4 trajstrip">${tiles}</div>`;
 }
 
+/* slide agregado de Hitos: todas las metas binarias con fecha (logro sí/no) de
+   todos los WIGs, ordenadas por estado (pendiente → en curso → logrado) y fecha. */
+function hitosSlideHTML(w){
+  const sc=h=>h.done?'win':(/curso|progres|marcha/i.test(h.estado)?'risk':'');
+  const ic=h=>h.done?'✓':(/curso|progres|marcha/i.test(h.estado)?'◷':'○');
+  const ord=h=>h.done?2:(/curso|progres|marcha/i.test(h.estado)?1:0);
+  const items=[...w.hitosAll].sort((a,b)=>(ord(a)-ord(b))||((a.fechaSort||9e9)-(b.fechaSort||9e9)));
+  const total=w.hitosAll.length;
+  const cards=items.map(h=>`
+    <div class="hcard ${sc(h)}">
+      <div class="hicon ${sc(h)}">${ic(h)}</div>
+      <div class="hbody">
+        <div class="htext">${esc(h.text)}</div>
+        <div class="hmeta">WIG ${h.wig}${h.resp?' · '+esc(h.resp):''}${h.fecha?' · meta <b>'+esc(h.fecha)+'</b>':''}</div>
+      </div>
+      <div class="hbadge ${sc(h)}">${esc(h.estado||'—')}</div>
+    </div>`).join('');
+  return `
+    <div class="head">
+      <div>
+        <div class="eyebrow cond">METAS BINARIAS · LOGRO SÍ / NO</div>
+        <div class="wigtitle cond">Hitos — metas con fecha objetivo</div>
+        <div class="meta-line">Avances clave que sostienen los 12 WIGs. Cada uno se logra o no, con fecha meta y responsable.</div>
+      </div>
+      <div class="verdict">
+        <div class="chip ${w.done===total?'win':(w.done?'risk':'plain')} cond">${w.done}/${total} LOGRADOS</div>
+        <div class="asof">${w.curso} en curso · ${w.pend} pendientes</div>
+      </div>
+    </div>
+    <div class="hgrid">${cards}</div>`;
+}
+
 function buildSlides(wigs){
   const stage=$('#stage'); stage.innerHTML=''; $('#dots').innerHTML='';
   const wigList=wigs.filter(x=>!x.company&&!x.yearPage);   // numeración de WIGs (excluye compañía y años)
@@ -645,6 +702,9 @@ function buildSlides(wigs){
     const el=document.createElement('div'); el.className='slide';
     if(w.yearPage){ el.innerHTML=yearSlideHTML(w); stage.appendChild(el);
       const dotY=document.createElement('div'); dotY.className='dot'; dotY.onclick=()=>go(i); $('#dots').appendChild(dotY);
+      return {el,w}; }
+    if(w.hitosPage){ el.innerHTML=hitosSlideHTML(w); stage.appendChild(el);
+      const dotH=document.createElement('div'); dotH.className='dot'; dotH.onclick=()=>go(i); $('#dots').appendChild(dotH);
       return {el,w}; }
     const eyebrow=w.company?'WIG DE LA COMPAÑÍA':`WIG DE SOPORTE ${wigList.indexOf(w)+1} DE ${wigList.length}`;
     const big1=w.acum

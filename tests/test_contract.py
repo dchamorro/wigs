@@ -182,7 +182,7 @@ def test_html_parser_matches():
     html = open(HTML_PATH, encoding='utf-8').read()
     for anchor in ("g('B2')", "g('B4')", "g('B5')", "g('E10')", "g('B'+r)",
                    "g('C19')", "encode_col(8+2*k)", "'Compromisos'", "'Tareas'", "parseTareas",
-                   "g('B6')", "g('B7')", "g(c+'5')", "/^hitos/i"):
+                   "g('B6')", "g('B7')", "g(c+'5')", "/^hitos/i", "hitosSlideHTML", "hitosPage"):
         assert anchor in html, f'parser: ancla {anchor} no encontrada — contrato roto'
     assert "const CONFIG = { DATA_URL: ''" in html, (
         'falta la línea CONFIG exacta — el workflow de Azure parchea esa cadena literal')

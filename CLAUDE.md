@@ -51,8 +51,11 @@ páginas por año (`2027`/`2028`/`2029`), `Tareas` e `Instrucciones` (ignoradas
 como slides). Las páginas por año (nombre de 4 dígitos, o el legado `Backlog
 <año>`) **no** son slides de WIG, pero el TV **sí** genera un slide propio por
 año (meta NAT + cobertura de backlog), leyendo B4/E4/B5/E5/B6/E6/B7/E7 y la
-tabla semanal (A/B/C desde fila 12). El orden de slides es: Compañía → 2027 →
-2028 → 2029 → los 12 WIGs. `Compromisos` ya **no se genera** pero el parser
+tabla semanal (A/B/C desde fila 12). El TV también genera un slide agregado de
+**Hitos** (`hitosSlideHTML`): junta todas las metas binarias con fecha de los 12
+WIGs, ordenadas por estado y fecha (no lee Excel nuevo; agrega los hitos ya
+parseados por pestaña). El orden de slides es: Compañía → 2027 → 2028 → 2029 →
+**Hitos** → los 12 WIGs. `Compromisos` ya **no se genera** pero el parser
 conserva soporte **opcional** para tableros viejos que la traigan. `Tareas` sí
 se genera y el parser la lee (no es slide; alimenta el detalle de cada lead).
 
