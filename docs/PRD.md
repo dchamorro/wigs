@@ -78,9 +78,8 @@ ongoing cost on whoever runs them.
 ### Non-goals
 
 - **Not a system of record / BI platform.** Excel is the source of data on purpose, until
-  the cadence matures (see §9 and `CLAUDE.md` "Decisiones tomadas"). Airtable is being
-  *explored* as "Option A" (a capture layer with Excel still the calc engine — see
-  [`docs/AIRTABLE.md`](./AIRTABLE.md)), but it is not the live source today; no Sheets/Power BI.
+  the cadence matures (see §9 and `CLAUDE.md` "Decisiones tomadas"). No Airtable,
+  Sheets, Power BI, or small DB in the current scope.
 - **Not simultaneous multi-user editing.** Owners save-and-close the shared file; there is
   no live co-editing. If this becomes painful, the fallback is a single coordinator who
   types everyone's numbers, or a move to SharePoint.
@@ -231,12 +230,10 @@ Explicitly **out of current scope**, kept here so the trade-offs aren't re-litig
   numbers. Decision deferred "until the cadence matures."
 - **Move off Excel as source of data.** Airtable/Sheets/a small DB become attractive once the
   weekly cadence is reliable and the team wants history/automation. Excel is a deliberate
-  *starting* point, not the end state. **Airtable is already prototyped as "Option A"**
-  ([`excel/build_airtable.py`](../excel/build_airtable.py), [`docs/AIRTABLE.md`](./AIRTABLE.md)):
-  Airtable as the capture layer while Excel stays the calculation engine and the Excel↔TV
-  contract is untouched. It also enables per-person **TRMNL** e-ink desktop cards (Mi
-  marcador / Compañía / Mi equipo / Mi incentivo — `web/trmnl_card_*.svg`). This is
-  exploratory, not the live data source today; `sync_from_airtable.py` is not yet written.
+  *starting* point, not the end state; no alternate data source is wired in this repo today.
+- **TRMNL live data.** The SVG renderer and fixture support per-person e-ink cards, but they are
+  not connected to a live source. A future adapter should be designed against the chosen system
+  of record, not stubbed ahead of that decision.
 - **History & trends.** Persisting weekly snapshots for trend lines beyond the current period.
 - **Alerting.** Push a Slack/email nudge when a WIG flips to *Atrasado* or when an owner hasn't
   updated by Monday.
@@ -281,5 +278,4 @@ it sustains Discipline 3 (compelling scoreboard) and the Monday cadence:
 - [`docs/PUESTA-EN-MARCHA-AZURE.md`](./PUESTA-EN-MARCHA-AZURE.md) — Azure first-time setup runbook.
 - [`excel/build_wig.py`](../excel/build_wig.py) — single source of truth for workbook structure and the 12 WIGs.
 - [`docs/DESIGN.md`](./DESIGN.md) — system design: architecture, components, data flow, decisions.
-- [`docs/AIRTABLE.md`](./AIRTABLE.md) — Airtable "Option A" exploration + TRMNL desktop cards.
 - [`tests/test_contract.py`](../tests/test_contract.py) — enforces the contract.

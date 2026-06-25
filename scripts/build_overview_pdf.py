@@ -240,8 +240,7 @@ stack = [
         "+ recalc before publishing."),
     ("Tests", "Contract tests (<font name=Courier>tests/test_contract.py</font>) "
         "enforce that the Excel layout and the HTML parser stay in sync."),
-    ("Explorations (not live)", "Airtable “Option A” as a future input layer; "
-        "TRMNL e-ink desktop cards rendered per person "
+    ("Explorations (not live)", "TRMNL e-ink desktop cards rendered per person "
         "(<font name=Courier>trmnl_render.py</font>)."),
 ]
 table(stack, ["Layer", "Technology"], [1.5 * inch, 5.0 * inch])
@@ -271,9 +270,8 @@ P("Roadmap (deferred — revisit as the cadence matures)", "h2")
 bullets([
     "<b>SharePoint co-editing</b> — replace save-and-close Samba sharing if "
     "simultaneous edits become a pain point.",
-    "<b>Move the data source off Excel</b> — Airtable “Option A” is prototyped "
-    "(<font name=Courier>build_airtable.py</font>); the "
-    "<font name=Courier>sync_from_airtable.py</font> adapter is not yet written.",
+    "<b>Move the data source off Excel</b> — revisit only after the weekly "
+    "cadence is reliable and the team needs history or automation.",
     "<b>History &amp; trends</b> — keep period-over-period data to show "
     "trajectories, not just the current week.",
     "<b>Alerting</b> — notify owners when a WIG slips into Riesgo/Atrasado.",
@@ -322,11 +320,11 @@ table([[Paragraph(c, S["mono"]).text, d] for c, d in cmds],
 
 P("Repository layout", "h2")
 layout = [
-    ("excel/", "Workbook generator, data migrator, demo filler, Airtable seeder."),
+    ("excel/", "Workbook generator, data migrator, demo filler."),
     ("scripts/", "recalc (mandatory), demo embedder, TRMNL card renderer."),
     ("web/", "marcador.html (the TV board), published workbook, Azure config."),
     ("deploy/", "PGX provisioning script (Samba + nginx + timer)."),
-    ("docs/", "PRD, DESIGN, Airtable notes, Azure login &amp; rollout runbooks."),
+    ("docs/", "PRD, DESIGN, Azure login &amp; rollout runbooks."),
     ("tests/", "Contract tests (Excel↔parser) + TRMNL render checks."),
     ("dist/", "Build artifacts (gitignored) — including this PDF."),
 ]
