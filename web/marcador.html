@@ -760,12 +760,20 @@ function buildSlides(wigs){
     const chartHead=multiYear
       ? `<div class="lbl">Cómo vamos por año<span class="yrchips">${w.years.map((y,j)=>`<button class="yrchip${j===(w._sel||0)?' on':''}" data-yr="${j}">${esc(y.year)}</button>`).join('')}</span></div><div class="yrmetric">${esc(w.years[w._sel||0].metric)}</div>`
       : `<div class="lbl">Marcador · meta vs real <span class="legend"><span><i class="meta"></i>Meta</span><span><i></i>Real</span></span></div>`;
+    // cabecera: responsable (quién captura el lag, B6) + equipo (E4). El "Dueño"
+    // se omite si quedó sin asignar (evita el «Por asignar» sin información).
+    const hasOwner=w.duenio&&!/^\s*por\s+asignar\s*$/i.test(String(w.duenio));
+    const headParts=[];
+    if(hasOwner)        headParts.push(`Dueño: <b>${esc(w.duenio)}</b>`);
+    if(w.responsable)   headParts.push(`Responsable: <b>${esc(w.responsable)}</b>`);
+    if(w.equipo)        headParts.push(`Equipo: <b>${esc(w.equipo)}</b>`);
+    const metaLine=`${headParts.join(' · ')}${w.lag?(headParts.length?'<br>':'')+esc(w.lag):''}`;
     el.innerHTML=`
       <div class="head">
         <div>
           <div class="eyebrow cond">${eyebrow}</div>
           <div class="wigtitle cond">${esc(w.title)}</div>
-          <div class="meta-line">Dueño: <b>${esc(w.duenio)}</b> · Equipo: <b>${esc(w.equipo)}</b><br>${esc(w.lag)}</div>
+          <div class="meta-line">${metaLine}</div>
         </div>
         <div class="verdict">
           <div class="chip ${v.cls} cond">${v.txt}</div>
