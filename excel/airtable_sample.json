@@ -1,0 +1,48 @@
+{
+  "_comment": "Fixture de prueba para sync_from_airtable.py — misma forma que produce from_airtable(). Fechas alineadas a los periodos de build_wig.py (semanal desde 2026-06-15; mensual WIG desde 2026-07-01; NAT mensual desde 2027-01-01).",
+  "nat_annual_meta": 1000000,
+  "wigs": {
+    "1. Smart User 500": {
+      "dueno": "María José Selva",
+      "meta": 500,
+      "leads": {
+        "1": {"name": "L1. Cartas de asignación firmadas", "meta": 20},
+        "2": {"name": "L2. Demos / POCs activos", "meta": 2}
+      },
+      "readings": [
+        {"date": "2026-06-15", "lag": 47, "leads": {"1": 12, "2": 2}},
+        {"date": "2026-06-22", "lag": 48, "leads": {"1": 14, "2": 2}}
+      ]
+    },
+    "8. GP 16%": {
+      "dueno": "Finanzas",
+      "meta": 0.16,
+      "leads": {
+        "1": {"name": "L1. % distribuciones del mes vs plan de baja distribución", "meta": 1.0}
+      },
+      "readings": [
+        {"date": "2026-07-01", "lag": 0.142, "leads": {"1": 0.9}}
+      ]
+    }
+  },
+  "years": {
+    "2027": {
+      "gp_pct_assumed": null,
+      "backlog": [
+        {"date": "2026-06-15", "gp_committed": 1100000},
+        {"date": "2026-06-22", "gp_committed": 1280000}
+      ]
+    },
+    "2029": {
+      "gp_pct_assumed": 0.17,
+      "backlog": []
+    }
+  },
+  "nat_trajectory": {
+    "2026": 375000,
+    "2027": 90000
+  },
+  "nat_monthly": [
+    {"date": "2027-01-01", "nat_real": 70000}
+  ]
+}

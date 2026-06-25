@@ -15,6 +15,7 @@ demo: build
 test:
 	$(PY) tests/test_contract.py
 	$(PY) tests/test_trmnl.py
+	$(PY) tests/test_sync.py
 
 trmnl:
 	$(PY) scripts/trmnl_render.py --input $(INPUT) --out dist/trmnl $(if $(PNG),--png,)
@@ -26,6 +27,13 @@ migrate: build
 	@test -n "$(OLD)" || (echo "Uso: make migrate OLD=/ruta/tablero_con_datos.xlsx" && exit 1)
 	$(PY) excel/migrate_data.py "$(OLD)" $(XLSX) dist/Tablero_migrado.xlsx
 	$(PY) scripts/recalc.py dist/Tablero_migrado.xlsx
+
+# Genera el Excel DESDE Airtable (fuente de verdad). Env: AIRTABLE_TOKEN, AIRTABLE_BASE_ID.
+# Offline/pruebas: make sync FIXTURE=excel/airtable_sample.json
+sync:
+	$(PY) excel/build_wig.py $(XLSX)
+	$(PY) excel/sync_from_airtable.py $(XLSX) dist/Tablero_sync.xlsx $(if $(FIXTURE),--fixture $(FIXTURE),)
+	$(PY) scripts/recalc.py dist/Tablero_sync.xlsx
 
 deploy:
 	@test -n "$(PGX)" || (echo "Uso: make deploy PGX=usuario@ip" && exit 1)
@@ -43,4 +51,4 @@ publicar:
 		|| git commit -m "data: tablero semanal $$(date +%Y-%m-%d)" -- web/tablero.xlsx
 	git push
 
-.PHONY: build demo test trmnl pdf migrate deploy publicar
+.PHONY: build demo test trmnl pdf migrate sync deploy publicar
