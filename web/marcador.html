@@ -223,10 +223,10 @@ canvas{flex:1;width:100%;min-height:0}
 .wschip.win{border-left-color:var(--win)} .wschip.risk{border-left-color:var(--risk)} .wschip.lose{border-left-color:var(--lose)}
 .wschip .wsn{flex:none;width:2vh;height:2vh;min-width:15px;min-height:15px;border-radius:.4vh;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1vh;background:var(--line);color:var(--ink)}
 .wschip .wsname{flex:1;min-width:0;font-size:1.25vh;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wschip .wstag{flex:none;font-size:.95vh;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:.15vh .5vw;border-radius:.5vh;border:1px solid var(--faint);color:var(--faint)}
-.wschip .wstag.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
-.wschip .wstag.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
-.wschip .wstag.lose{border-color:var(--lose);color:var(--lose);background:var(--lose-bg)}
+.wschip .wsdot{flex:none;width:1.9vh;height:1.9vh;min-width:15px;min-height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.15vh;line-height:1;border:1.5px solid var(--faint);color:var(--faint)}
+.wschip .wsdot.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
+.wschip .wsdot.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
+.wschip .wsdot.lose{border-color:var(--lose);color:var(--lose);background:var(--lose-bg)}
 @media (prefers-reduced-motion: reduce){.slide{transition:none}#detail,#dcard{transition:none}}
 /* pantallas táctiles: blancos de toque grandes */
 @media (pointer:coarse){
@@ -690,12 +690,14 @@ function temasHTML(w){
 function wigStatusHTML(wigs){
   const items=wigs.map((x,idx)=>({x,idx})).filter(o=>!o.x.company&&!o.x.yearPage);
   if(!items.length) return '';
+  // estado como color + símbolo (sin texto): ✓ en meta · ! riesgo · ✕ atrasado · · sin datos
+  const sym={win:'✓',risk:'!',lose:'✕',none:'·'};
   const chips=items.map(({x,idx},i)=>{
     const v=verdictOf(x), cls=v.cls||'none';
     return `<button class="wschip ${cls}" data-go="${idx}" aria-label="${esc(x.title)} — ${esc(v.txt)}" title="${esc(v.txt)}">
+      <span class="wsdot ${cls}">${sym[cls]||'·'}</span>
       <span class="wsn">${x.wigNum||(i+1)}</span>
       <span class="wsname">${esc(x.title||'')}</span>
-      <span class="wstag ${cls}">${esc(v.txt)}</span>
     </button>`;
   }).join('');
   return `<div class="wigstatus">
