@@ -31,6 +31,15 @@ def is_year_page(name):
     return bool(re.match(r'^\d{4}$', name)) or name.startswith('Backlog ')
 
 
+def find_hitos(ws):
+    """Fila del rótulo 'Hitos' (bloque de metas binarias bajo los datos), o None."""
+    for r in range(DATA0, ws.max_row + 1):
+        v = ws.cell(row=r, column=1).value
+        if isinstance(v, str) and v.strip().startswith('Hitos'):
+            return r
+    return None
+
+
 def date_map(ws):
     """fila -> fecha (col B) para emparejar periodos entre versiones."""
     out = {}
@@ -87,16 +96,16 @@ def main(old_path, new_path, out_path):
                 report.append(f'  {name}: pestaña nueva, sin datos que migrar')
             continue
         o, n = old[name], new[name]
-        # encabezado
-        for a in ('B4', 'B5'):
+        # encabezado: dueño (B4), meta (B5) y captura del lag (B6 resp., B7 fuente)
+        for a in ('B4', 'B5', 'B6', 'B7'):
             if o[a].value is not None:
                 n[a] = o[a].value
-        # nombres y metas de leads (si el viejo los tenía personalizados)
+        # nombres/metas de leads (fila 8/9) y captura por lead (fila 5 equipo / 6 resp / 7 fuente)
         for k in range(MAX_LEADS):
             c = 9 + 2 * k
-            for row in (8, 9):
+            for row in (5, 6, 7, 8, 9):
                 v = o.cell(row=row, column=c).value
-                if v is not None:
+                if v is not None and not (isinstance(v, str) and v.startswith('=')):
                     n.cell(row=row, column=c, value=v)
         # datos por fecha
         omap, nmap = date_map(o), date_map(n)
@@ -111,8 +120,23 @@ def main(old_path, new_path, out_path):
                 if v is not None and not (isinstance(v, str) and v.startswith('=')):
                     n.cell(row=nrow, column=c, value=v)
                     moved += 1
+        # Hitos (metas binarias): si el viejo trae el bloque, copia sus filas
+        # digitadas (Hito · Lead · Responsable · Fecha · Estado) al nuevo por orden.
+        oh, nh = find_hitos(o), find_hitos(n)
+        hmoved = 0
+        if oh and nh:
+            r = oh + 2
+            while o.cell(row=r, column=1).value not in (None, ''):
+                for c in (1, 5, 6, 7, 8):
+                    v = o.cell(row=r, column=c).value
+                    if v is not None and not (isinstance(v, str) and v.startswith('=')):
+                        n.cell(row=nh + 2 + hmoved, column=c, value=v)
+                hmoved += 1
+                r += 1
         dropped = len(set(omap) - set(nmap))
-        report.append(f'  {name}: {moved} celdas migradas' + (f' · ⚠ {dropped} periodos del viejo no existen en el nuevo' if dropped else ''))
+        report.append(f'  {name}: {moved} celdas migradas'
+                      + (f', {hmoved} hitos' if hmoved else '')
+                      + (f' · ⚠ {dropped} periodos del viejo no existen en el nuevo' if dropped else ''))
 
     # Compromisos: copia plana de filas digitadas (A2:F...)
     if 'Compromisos' in old.sheetnames and 'Compromisos' in new.sheetnames:
