@@ -41,10 +41,11 @@ def is_support(name):
 
 
 def find_hitos(ws):
-    """Fila del rótulo 'Hitos' del bloque de metas binarias (debajo de los datos)."""
+    """Fila del rótulo del bloque de metas binarias (debajo de los datos):
+    'Temas puntuales' (o el legado 'Hitos')."""
     for r in range(DATA0, ws.max_row + 1):
         v = ws.cell(row=r, column=1).value
-        if isinstance(v, str) and v.strip().startswith('Hitos'):
+        if isinstance(v, str) and (v.strip().startswith('Temas puntual') or v.strip().startswith('Hitos')):
             return r
     return None
 
@@ -96,12 +97,12 @@ def test_wig_tab_layout():
         assert ws['A7'].value and 'uente' in str(ws['A7'].value), f'{name}: falta rótulo Fuente en A7'
         assert ws['H5'].value and 'quipo' in str(ws['H5'].value), f'{name}: falta rótulo Equipo por lead en H5'
         assert ws['H6'].value and 'esponsable' in str(ws['H6'].value), f'{name}: falta rótulo Responsable por lead en H6'
-        # bloque de Hitos (metas binarias con fecha) debajo de la tabla de datos
+        # bloque de Temas puntuales (metas binarias con fecha) debajo de los datos
         hrow = find_hitos(ws)
-        assert hrow, f'{name}: falta el bloque de Hitos bajo los datos'
+        assert hrow, f'{name}: falta el bloque de Temas puntuales bajo los datos'
         heads = [ws.cell(row=hrow + 1, column=c).value for c in (1, 5, 6, 7, 8)]
-        assert heads == ['Hito', 'Lead', 'Responsable', 'Fecha objetivo', 'Estado'], \
-            f'{name}: encabezados de Hitos inesperados {heads} — el parser los lee por posición'
+        assert heads == ['Tema', 'Lead', 'Responsable', 'Fecha objetivo', 'Estado'], \
+            f'{name}: encabezados de Temas puntuales inesperados {heads} — el parser los lee por posición'
 
 
 def test_compromisos_layout():
@@ -151,11 +152,11 @@ def test_dashboard_layout():
         "Dashboard: falta la columna 'Captura del lag' en H36"
     cap = ws.cell(row=37, column=8).value
     assert isinstance(cap, str) and cap.startswith('='), 'Dashboard: H37 debe referenciar B6/B7 del WIG'
-    # Sección 'Hitos por WIG' (rollup de metas binarias)
+    # Sección 'Temas puntuales por WIG' (rollup de metas binarias)
     found = any(isinstance(ws.cell(row=r, column=1).value, str)
-                and str(ws.cell(row=r, column=1).value).startswith('Hitos por WIG')
+                and str(ws.cell(row=r, column=1).value).startswith('Temas puntuales por WIG')
                 for r in range(48, 80))
-    assert found, "Dashboard: falta la sección 'Hitos por WIG'"
+    assert found, "Dashboard: falta la sección 'Temas puntuales por WIG'"
 
 
 def test_year_pages_layout():
@@ -182,7 +183,7 @@ def test_html_parser_matches():
     html = open(HTML_PATH, encoding='utf-8').read()
     for anchor in ("g('B2')", "g('B4')", "g('B5')", "g('E10')", "g('B'+r)",
                    "g('C19')", "encode_col(8+2*k)", "'Compromisos'", "'Tareas'", "parseTareas",
-                   "g('B6')", "g('B7')", "g(c+'5')", "/^hitos/i", "hitosSlideHTML", "hitosPage"):
+                   "g('B6')", "g('B7')", "g(c+'5')", "temasHTML", "wigStatusHTML"):
         assert anchor in html, f'parser: ancla {anchor} no encontrada — contrato roto'
     assert "const CONFIG = { DATA_URL: ''" in html, (
         'falta la línea CONFIG exacta — el workflow de Azure parchea esa cadena literal')
