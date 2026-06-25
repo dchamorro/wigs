@@ -63,10 +63,13 @@ Por pestaña de WIG:
 | B2 / B3 | Definición lag / "de X a Y" |
 | B4 / E4 | Dueño / Equipo |
 | B5 | Meta (el FORMATO de número de B5 decide cómo se muestran los valores: $, %, o número) |
+| B6 / B7 | **Captura del lag**: responsable que digita (B6) / fuente o método (B7) (input). El **equipo** del lag es E4. El parser y el Dashboard los leen. |
 | E10 | Si tiene texto ⇒ WIG acumulativo; vacío ⇒ WIG de nivel |
+| Fila 5 / 6 / 7, cols I,K,…,W | **Captura por lead** (mismas columnas que el lead): fila 5 **equipo**, fila 6 **responsable** (quién digita), fila 7 **fuente/método** (input). Rótulos en col H (`Equipo →`/`Responsable →`/`Fuente →`). El `Fin` del periodo se movió a F5/G5 para liberar H5. |
 | Fila 8, cols I,K,M,…,W | Nombres de leads (pares combinados; `(Disponible)` = slot inactivo) |
 | Fila 9, misma col | Meta del lead |
 | Filas 11+ | B fecha · C meta · D real (input) · E/F acumulados · G % · H estado · I+2k real lead · J+2k % lead |
+| Hitos (bloque bajo los datos) | **Metas binarias con fecha objetivo**. Rótulo `Hitos…` en col A en `último_dato + 2`; encabezados en la fila siguiente; `HITO_ROWS` (6) filas de entrada. Cols: **A–D Hito** (combinadas) · **E Lead** (1–8, opcional) · **F Responsable** · **G Fecha objetivo** · **H Estado** (`Pendiente`/`En curso`/`Logrado`). El parser lo localiza por el rótulo (no por fila fija, porque `último_dato` varía por WIG). |
 
 Dashboard (cuatro bloques + tabla de soporte). Es la **página principal**: arriba
 las metas de utilidad neta (NAT) de los 3 años con enlace a cada pestaña de año.
@@ -80,7 +83,14 @@ las metas de utilidad neta (NAT) de los 3 años con enlace a cada pestaña de a�
 - Seguimiento mensual NAT del año en curso: **C19 meta anual NAT** · encabezados
   fila 21 · filas 22–33: A mes, B meta, C real (input), D/E acumulados, F %,
   G estado. **El parser del TV lee este bloque (C19 + filas 22–33).**
-- WIGs de soporte: encabezados fila 36, una fila por WIG (37–48).
+- WIGs de soporte: encabezados fila 36, una fila por WIG (37–48). Cols A–I:
+  # · WIG · Dueño · Equipo · Meta · Último real · Estado · **Captura del lag** (H,
+  `=WIG!E4 · WIG!B6 — WIG!B7`) · Ir a pestaña.
+- Hitos por WIG: encabezados en `48+3+1`, una fila por WIG. Por WIG: # · WIG ·
+  Logrado · En curso · Pendiente (`COUNTIF` sobre el rango de Estado del bloque
+  Hitos de la pestaña) · Próxima fecha (`MIN` de las fechas objetivo). Las
+  fórmulas referencian el rango de Hitos de cada WIG, que `build_wig.py` conoce
+  en tiempo de construcción (`hitos_ranges`).
 
 Páginas por año `2027`/`2028`/`2029` (encabezan con la meta de utilidad neta):
 | Celda/Col | Contenido |
@@ -107,9 +117,19 @@ fijos en fila 1, datos desde fila 2: `WIG | Lead | Tarea | Responsable | Estado`
 muestra como «Tareas de soporte» en el detalle de cada lead (toque/clic). El
 build incluye filas semilla de ejemplo (WIG 1); `migrate` copia las filas reales
 (A2:E) y descarta la semilla. Es robusta a su ausencia (tableros viejos).
+Las **metas binarias con fecha** (p. ej. "Certificarse como Apple Authorized
+Service Provider") **no** van en Tareas: viven en el bloque **Hitos** de cada
+pestaña de WIG (ver arriba).
 
 Reglas duras:
-- DATA0 = fila 11. MAX_LEADS = 8. No cambiar sin tocar parser + tests + migrate.
+- DATA0 = fila 11. MAX_LEADS = 8. HITO_ROWS = 6. No cambiar sin tocar parser +
+  tests + migrate.
+- Captura del dato (3 campos): **equipo** (lag = E4; por lead = fila 5),
+  **responsable** (lag = B6; por lead = fila 6), **fuente/método** (lag = B7; por
+  lead = fila 7). Hitos: estados `Pendiente`/`En curso`/`Logrado` (texto exacto,
+  el conditional formatting y el rollup del Dashboard hacen SEARCH/COUNTIF).
+- La columna "Captura del lag" del Dashboard usa `&` (no `TEXTJOIN`: LibreOffice
+  headless no lo recalcula → `#NAME?`): `=E4 & " · " & B6 & " — " & B7`.
 - WIGs "menos es mejor": el parser los detecta por nombre/título con el regex
   `LOWER_BETTER` (`/expired|apalanca|costos? local/i`). Al agregar un WIG de
   nivel donde menos = mejor (status Excel `D<=C`), ampliar ese regex.

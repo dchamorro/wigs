@@ -199,6 +199,9 @@ canvas{flex:1;width:100%;min-height:0}
 .task .meta .badge{display:inline-block;padding:.2vh .8vw;border-radius:.8vh;font-size:1.3vh;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--faint);color:var(--faint)}
 .task .meta .badge.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
 .task .meta .badge.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
+.capgrid{display:flex;flex-wrap:wrap;gap:1vw}
+.capgrid>div{flex:1 1 38%;background:var(--panel2);border:1px solid var(--line);border-radius:1vh;padding:1.1vh 1.2vw;font-size:1.9vh}
+.capgrid .caplbl{display:block;color:var(--faint);font-size:1.4vh;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4vh}
 @media (prefers-reduced-motion: reduce){.slide{transition:none}#detail,#dcard{transition:none}}
 /* pantallas táctiles: blancos de toque grandes */
 @media (pointer:coarse){
@@ -367,18 +370,20 @@ function parseWorkbook(wb){
     const meta=num(g('B5'));
     const lag=g('B2')||'';
     const acum=g('E10')!=null && String(g('E10')).trim()!=='' ;
-    // leads: names in row 8 starting col I (merged pairs), metas row 9, data Real/% pairs
+    // leads: names in row 8 starting col I (merged pairs), metas row 9, data Real/% pairs.
+    // Captura por lead: fila 5 = equipo, fila 6 = responsable, fila 7 = fuente / método.
     const leadDefs=[];
     for(let k=0;k<8;k++){
       const c=XLSX.utils.encode_col(8+2*k);
       const nm=g(c+'8');
       if(nm==null||String(nm).trim()===''||String(nm).includes('(Disponible)'))continue;
       leadDefs.push({k, name:String(nm).replace(/^L\d+\.\s*/,''), meta:num(g(c+'9')),
-        fmt:fmtFromCell(s[c+'9']), col:c, pcol:XLSX.utils.encode_col(9+2*k)});
+        fmt:fmtFromCell(s[c+'9']), col:c, pcol:XLSX.utils.encode_col(9+2*k),
+        equipo:g(c+'5')||'', resp:g(c+'6')||'', fuente:g(c+'7')||''});
     }
-    const rows=[];
+    const rows=[]; let dataEnd=11;
     for(let r=11;r<400;r++){
-      const f=g('B'+r); if(f==null) break;
+      const f=g('B'+r); if(f==null){dataEnd=r;break;}
       rows.push({label:fmtDate(typeof f==='number'?xlDate(f):new Date(f)),
         meta:num(g('C'+r)), real:num(g('D'+r)),
         metaA:num(g('E'+r)), realA:num(g('F'+r)),
@@ -386,9 +391,26 @@ function parseWorkbook(wb){
         lv:leadDefs.map(ld=>num(g(ld.pcol+r))),
         lr:leadDefs.map(ld=>num(g(ld.col+r)))});
     }
+    // Hitos (metas binarias con fecha): bloque bajo la tabla; se localiza por el
+    // rótulo 'Hitos' en la col A. Cols: A Hito · E Lead · F Resp · G Fecha · H Estado.
+    const hitos=[];
+    for(let hr=dataEnd; hr<dataEnd+6 && hr<400; hr++){
+      const a=g('A'+hr);
+      if(a!=null && /^hitos/i.test(String(a).trim())){
+        for(let rr=hr+2; rr<hr+2+30; rr++){
+          const t=g('A'+rr); if(t==null||String(t).trim()==='') break;
+          const fc=g('G'+rr), est=String(g('H'+rr)||'').trim();
+          hitos.push({text:String(t), lead:num(g('E'+rr)), resp:String(g('F'+rr)||''),
+            fecha: fc!=null ? (typeof fc==='number'?fmtDate(xlDate(fc)):String(fc)) : '',
+            estado:est, done:/lograd|hech|done|complet|listo/i.test(est)});
+        }
+        break;
+      }
+    }
     const wigNum=parseInt((String(name).match(/^(\d+)/)||[])[1],10)||(pos+1);
     out.push({company:false, title, lag, duenio:g('B4')||'—', equipo:g('E4')||'',
       meta, acum, fmt:fmtFromCell(s['B5']), lowerBetter:LOWER_BETTER(name+title),
+      responsable:g('B6')||'', fuente:g('B7')||'', hitos,
       rows, leads:leadDefs, wigNum, tasks:{}, initiatives:{}});
   });
   const tasks=parseCompromisos(wb);
@@ -673,7 +695,7 @@ function buildSlides(wigs){
         <div>
           <div class="eyebrow cond">${eyebrow}</div>
           <div class="wigtitle cond">${esc(w.title)}</div>
-          <div class="meta-line">Dueño: <b>${esc(w.duenio)}</b> · Equipo: <b>${esc(w.equipo)}</b><br>${esc(w.lag)}</div>
+          <div class="meta-line">Dueño: <b>${esc(w.duenio)}</b> · Equipo: <b>${esc(w.equipo)}</b>${(!w.company&&w.hitos&&w.hitos.length)?` · Hitos: <b>${w.hitos.filter(h=>h.done).length}/${w.hitos.length}</b>`:''}<br>${esc(w.lag)}</div>
         </div>
         <div class="verdict">
           <div class="chip ${v.cls} cond">${v.txt}</div>
@@ -757,6 +779,29 @@ function openDetail(w,k){
   // racha: semanas en meta de las últimas N con dato
   let hits=0,tot=0;
   for(let i=Math.max(0,li-11);i<=li;i++){const v=w.rows[i]&&w.rows[i].lv[k];if(v!=null){tot++;if(v>=1)hits++;}}
+  // captura del dato (equipo · responsable · fuente) — por lead, con respaldo al del lag
+  const capEq=(ld.equipo||w.equipo||'').trim();
+  const capResp=(ld.resp||w.responsable||'').trim();
+  const capFte=(ld.fuente||w.fuente||'').trim();
+  const capHtml=(capEq||capResp||capFte)
+    ? `<div class="dsec"><div class="lbl">¿Quién captura este dato?</div>
+        <div class="capgrid">
+          ${capEq?`<div><span class="caplbl">Equipo</span><b>${esc(capEq)}</b></div>`:''}
+          ${capResp?`<div><span class="caplbl">Responsable</span><b>${esc(capResp)}</b></div>`:''}
+          ${capFte?`<div><span class="caplbl">Fuente / método</span><b>${esc(capFte)}</b></div>`:''}
+        </div></div>` : '';
+  // hitos (metas binarias con fecha) de este lead
+  const hitos=(w.hitos||[]).filter(h=>h.lead===k+1);
+  const hitDone=hitos.filter(h=>h.done).length;
+  const hitCls=h=>h.done?'win':/curso|progres|marcha/i.test(h.estado)?'risk':'';
+  const hitosHtml=hitos.length
+    ? `<div class="dsec"><div class="lbl">Hitos <span class="cnt">${hitDone+' de '+hitos.length+' logrados'}</span></div>
+        <div class="tasks">${hitos.map(h=>`
+        <div class="task${h.done?' done':''}">
+          <div class="mark">${h.done?'✓':'◷'}</div>
+          <div class="txt">${esc(h.text)}${h.fecha?` <span class="cnt">· meta ${esc(h.fecha)}</span>`:''}</div>
+          <div class="meta"><b>${esc(h.resp)}</b>${h.resp&&h.estado?'<br>':''}<span class="badge ${hitCls(h)}">${esc(h.estado||'')}</span></div>
+        </div>`).join('')}</div></div>` : '';
   const tasks=(w.tasks&&w.tasks[k]?[...w.tasks[k]]:[]).sort((a,b)=>b.ord-a.ord);
   const done=tasks.filter(t=>t.done).length;
   const tasksHtml=tasks.length
@@ -804,6 +849,8 @@ function openDetail(w,k){
         <div class="lbl">Historia del indicador <span class="cnt">% vs meta por periodo · línea = 100%</span></div>
         <div class="dchart">${detailBarsChart(w,k)}</div>
       </div>
+      ${capHtml}
+      ${hitosHtml}
       <div class="dsec">
         <div class="lbl">Tareas de soporte <span class="cnt">${inits.length?initDone+' de '+inits.length+' hechas':''}</span></div>
         ${initsHtml}

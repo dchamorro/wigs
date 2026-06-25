@@ -9,6 +9,7 @@ from datetime import date, timedelta
 
 ARIAL = 'Arial'
 F_TITLE = Font(name=ARIAL, size=14, bold=True, color='1F3864')
+F_SECT = Font(name=ARIAL, size=12, bold=True, color='1F3864')
 F_LBL = Font(name=ARIAL, size=10, bold=True)
 F_TXT = Font(name=ARIAL, size=10)
 F_INPUT = Font(name=ARIAL, size=10, color='0000FF')
@@ -51,20 +52,38 @@ def month_firsts(start, n):
 
 START = date(2026, 6, 15)
 MAX_LEADS = 8
-PCT = '0.0%'; CNT = '#,##0'; USD = '"$"#,##0'
+HITO_ROWS = 6          # filas de hitos (metas binarias con fecha) por pestaña de WIG
+PCT = '0.0%'; CNT = '#,##0'; USD = '"$"#,##0'; DEC1 = '0.0'  # DEC1: conteos con 1 decimal (metas semanales convertidas de mensuales)
 
 WIGS = [
     dict(tab='1. Smart User 500', title='WIG 1 — Incrementar el Parque de Smart User en 500 equipos en el 2026',
          lag='Equipos Smart User colocados (acumulado). 500 equipos a $40/mes = $6.4K MRR adicional en GP.',
          fromto='De 0 a 500 equipos colocados, antes del 31 de diciembre de 2026.',
          equipo='Pre-Sales, Del - DEX', meta=500, fmt=CNT, tipo='acum', end=date(2026, 12, 28), freq='W',
-         leads=[('Compromisos de asignación firmados (equipos)', 20, CNT),
-                ('Demos / POCs activos (Promerica, Disnorte, otros)', 2, CNT),
-                ('Presentaciones de oferta Smart User realizadas', 3, CNT),
-                ('Equipos cotizados en la semana', 30, CNT),
-                ('Equipos en bodega listos para colocar', 40, CNT),
-                ('Clientes nuevos contactados con la oferta', 2, CNT),
-                ('% equipos colocados en ≤2 semanas tras firma', 1.0, PCT)]),
+         # captura del lag: equipo = E4 del WIG; responsable que digita (fila 6) y fuente/método (fila 7)
+         capta_resp='Sofía', fuente="Reporte 'on-hold' (semanal)",
+         # captura por lead: (Equipo, Responsable, Método) — tres campos separados
+         lead_capta=[('DEX Presale', 'Martha', 'Manual'),
+                     ('AM / Contact Center', 'Ingrid', 'SSC'),
+                     ('CS / AM', 'Margel', 'Manual'),
+                     ('AM / Contact Center', 'Victor', 'Manual'),
+                     ('Finanzas / Presale DEX', 'Federico', 'Manual'),
+                     ('AM / DEX', 'Arlen', 'Manual'),
+                     ('Carmen / Carolina', 'Contact Center', 'Presale DEX'),
+                     ('AM / CS', 'Yenifer', 'Manual')],
+         # hitos: metas binarias con fecha objetivo (logro = sí/no). (texto, lead, responsable, fecha, estado)
+         hitos=[('Certificarse como Apple Authorized Service Provider', None, 'Del - DEX', date(2026, 9, 30), 'En curso'),
+                ('Habilitar 50 equipos demo en showroom', 5, 'Finanzas / Presale DEX', date(2026, 7, 31), 'Pendiente')],
+         # Leads reales (medidas predictivas). Meta = objetivo MENSUAL ÷ 4.33 → semanal,
+         # excepto el nivel de inventario (50, se mantiene) y la tasa de acompañamiento (100%).
+         leads=[('Presentación TCO', 0.7, DEC1),                         # 3/mes
+                ('Llamadas en frío', 3.5, DEC1),                         # 15/mes
+                ('Analizar parque restante', 0.2, DEC1),                 # 1/mes
+                ('Entrega de ofertas no solicitadas', 3.5, DEC1),        # 15/mes
+                ('Mantener inventario (nivel)', 50, CNT),                # nivel: 50 en bodega
+                ('Acompañar cada oferta de venta directa con Smart User', 1.0, PCT),  # tasa: 100%
+                ('Evento de generación de demanda', 0.2, DEC1),          # 1/mes
+                ('Referencia de posibles clientes', 0.2, DEC1)]),        # 1/mes
     dict(tab='2. MV Advisory', title='WIG 2 — Lograr un Monthly Value de $X en advisory en el primer trimestre de 2027',
          lag='MV de horas advisory de ingenieros locales vendidas (USD acumulado). Costo fijo ya cubierto = mayor utilidad.',
          fromto='De $0 a la meta de MV advisory, antes del 31 de marzo de 2027. (Definir $X en la celda Meta)',
@@ -210,10 +229,20 @@ def build_wig_tab(w):
     lbl('A5', 'Meta:'); ws['B5'] = w['meta']; ws['B5'].font = F_INPUT; ws['B5'].number_format = w['fmt']
     if w.get('meta_x'): ws['B5'].fill = FILL_YEL
     lbl('D5', 'Inicio:'); ws['E5'] = periods[0]; ws['E5'].font = F_INPUT; ws['E5'].number_format = 'dd-mmm-yy'
-    lbl('G5', 'Fin:'); ws['H5'] = periods[-1]; ws['H5'].font = F_INPUT; ws['H5'].number_format = 'dd-mmm-yy'
-    lbl('A6', 'Leads:')
-    per = 'semanal' if w['freq'] == 'W' else 'mensual'
-    txt('B6', f'Hasta {MAX_LEADS} indicadores predictivos a la derecha. L1–L2 = apuesta principal del equipo; L3–L8 = indicadores de apoyo. Nombre (fila 8) y meta {per} (fila 9) editables en azul.')
+    lbl('F5', 'Fin:'); ws['G5'] = periods[-1]; ws['G5'].font = F_INPUT; ws['G5'].number_format = 'dd-mmm-yy'
+    # Captura del dato — tres campos: EQUIPO · RESPONSABLE (quién digita) · FUENTE/MÉTODO.
+    # Lag (izquierda): equipo = E4 del WIG · responsable (B6) · fuente (B7).
+    # Por lead (cols I+): fila 5 equipo · fila 6 responsable · fila 7 fuente.
+    lbl('A6', 'Responsable:'); ws.merge_cells('B6:G6')
+    cr = ws['B6']; cr.font = F_INPUT; cr.alignment = WRAP
+    if w.get('capta_resp'): cr.value = w['capta_resp']
+    lbl('A7', 'Fuente / método:'); ws.merge_cells('B7:G7')
+    cfu = ws['B7']; cfu.font = F_INPUT; cfu.alignment = WRAP
+    if w.get('fuente'): cfu.value = w['fuente']
+    for rr, txt_h in ((5, 'Equipo →'), (6, 'Responsable →'), (7, 'Fuente →')):
+        lc = ws.cell(row=rr, column=8, value=txt_h); lc.font = F_LBL
+        lc.alignment = Alignment(horizontal='right', vertical='center')
+    ws.row_dimensions[5].height = 24; ws.row_dimensions[6].height = 24; ws.row_dimensions[7].height = 24
     lbl('A8', 'Periodos:'); ws['B8'] = f'=COUNT(A{DATA0}:A{last})'; ws['B8'].font = F_FORM
     txt('A9', 'Celdas azules = se digitan cada lunes. Celdas negras = fórmulas, no tocar.', Font(name=ARIAL, size=9, italic=True, color='808080'))
 
@@ -238,7 +267,16 @@ def build_wig_tab(w):
         mc = ws.cell(row=9, column=c1)
         if meta is not None: mc.value = meta
         mc.font = F_INPUT; mc.number_format = fmt; mc.alignment = CENTER
-        for rr in (8, 9):
+        # captura por lead: fila 5 = equipo, fila 6 = responsable, fila 7 = fuente / método
+        lc = w.get('lead_capta') or []
+        cap = lc[k] if k < len(lc) else None
+        for rr, idx in ((5, 0), (6, 1), (7, 2)):
+            ws.merge_cells(start_row=rr, start_column=c1, end_row=rr, end_column=c2)
+            cc0 = ws.cell(row=rr, column=c1)
+            if name != '(Disponible)' and cap and idx < len(cap) and cap[idx] is not None:
+                cc0.value = cap[idx]
+            cc0.font = F_INPUT_S; cc0.alignment = WRAPC; cc0.fill = FILL_GREY
+        for rr in (5, 6, 7, 8, 9):
             for cc in (c1, c2): ws.cell(row=rr, column=cc).border = BORDER
         for cc, h in ((c1, 'Real'), (c2, '%')):
             cell = ws.cell(row=10, column=cc, value=h)
@@ -294,9 +332,47 @@ def build_wig_tab(w):
     ch.series[1].graphicalProperties.line.solidFill = '2E75B6'
     ch.series[1].graphicalProperties.line.width = 28000
     ws.add_chart(ch, f'{col(last_lead_col + 2)}2')
-    return last
 
-lasts = {w['tab']: build_wig_tab(w) for w in WIGS}
+    # ---- Hitos: metas binarias con fecha objetivo (logro = sí/no) ----
+    # Bloque debajo de la tabla de datos. El parser lo localiza por el rótulo
+    # 'Hitos' en la col A tras el fin de los datos. Cols: A–D Hito (combinadas),
+    # E Lead (1–8, opcional), F Responsable, G Fecha objetivo, H Estado
+    # (Pendiente / En curso / Logrado). Lo digitan los dueños.
+    hito0 = last + 2
+    ws.merge_cells(start_row=hito0, start_column=1, end_row=hito0, end_column=last_lead_col)
+    ws.cell(row=hito0, column=1,
+            value='Hitos — metas binarias con fecha objetivo (logro = sí/no)').font = F_SECT
+    hh = hito0 + 1
+    ws.merge_cells(start_row=hh, start_column=1, end_row=hh, end_column=4)
+    for c, h in ((1, 'Hito'), (5, 'Lead'), (6, 'Responsable'), (7, 'Fecha objetivo'), (8, 'Estado')):
+        cell = ws.cell(row=hh, column=c, value=h)
+        cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
+    hr0, hr1 = hh + 1, hh + HITO_ROWS
+    seed = list(w.get('hitos') or [])
+    dv_hl = DataValidation(type='list', formula1='"%s"' % ','.join(str(i) for i in range(1, MAX_LEADS + 1)), allow_blank=True)
+    dv_he = DataValidation(type='list', formula1='"Pendiente,En curso,Logrado"', allow_blank=True)
+    ws.add_data_validation(dv_hl); ws.add_data_validation(dv_he)
+    dv_hl.add(f'E{hr0}:E{hr1}'); dv_he.add(f'H{hr0}:H{hr1}')
+    for j in range(HITO_ROWS):
+        r = hr0 + j
+        s = seed[j] if j < len(seed) else (None,) * 5
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+        vals = {1: s[0], 5: s[1], 6: s[2], 7: s[3], 8: s[4]}
+        for c in range(1, 9):
+            cell = ws.cell(row=r, column=c)
+            if c in vals: cell.value = vals[c]
+            cell.border = BORDER; cell.font = F_INPUT
+            cell.alignment = WRAP if c == 1 else CENTER
+            if c == 7: cell.number_format = 'dd-mmm-yy'
+        ws.row_dimensions[r].height = 22
+    for txt_, dxf in (('Logrado', GREEN_DXF), ('En curso', YEL_DXF), ('Pendiente', RED_DXF)):
+        ws.conditional_formatting.add(f'H{hr0}:H{hr1}', Rule(type='containsText', operator='containsText',
+            text=txt_, dxf=dxf, formula=[f'NOT(ISERROR(SEARCH("{txt_}",H{hr0})))']))
+    return last, hr0, hr1
+
+built = {w['tab']: build_wig_tab(w) for w in WIGS}
+lasts = {t: v[0] for t, v in built.items()}
+hitos_ranges = {t: (v[1], v[2]) for t, v in built.items()}
 
 # ---------- Páginas por año (meta de utilidad neta + cobertura de backlog) ----------
 # Una pestaña por año futuro (2027/2028/2029). Encabeza con la META DE UTILIDAD
@@ -383,9 +459,10 @@ year_lasts = {b['tab']: build_year_tab(b) for b in BACKLOG_YEARS}
 # marcador la lee por posición A–E y la muestra en el detalle de cada lead.
 # Los dueños agregan filas en la copia compartida; los desplegables evitan
 # números fuera de rango. La semilla documenta el formato con ejemplos reales.
+# Nota: las metas binarias con fecha (p. ej. "Certificarse como Apple Authorized
+# Service Provider") ya no van aquí; viven en el bloque "Hitos" de cada pestaña de WIG.
 TAREAS_SEED = [
     (1, 3, 'Presentar la oferta Smart User a 100 clientes en 2026', 'Pre-Sales', 'En curso'),
-    (1, 1, 'Certificarse como Apple Authorized Service Provider para reparar equipos con mayor eficiencia', 'Del - DEX', 'Pendiente'),
     (1, 5, 'Mantener siempre 50 equipos en bodega listos para colocar', 'Del - DEX', 'En curso'),
 ]
 TAREAS_ROWS = 120  # filas de entrada disponibles para los dueños
@@ -430,7 +507,6 @@ build_tareas_tab()
 # ---------- Dashboard ----------
 ws = dash
 ws.sheet_view.showGridLines = False
-F_SECT = Font(name=ARIAL, size=12, bold=True, color='1F3864')
 ws.merge_cells('A1:H1'); ws['A1'] = 'Tablero 4DX — GBM Nicaragua'; ws['A1'].font = Font(name=ARIAL, size=16, bold=True, color='1F3864')
 ws.merge_cells('A2:H2'); ws['A2'] = 'WIG de la compañía: Construir la utilidad neta (NAT) de Nicaragua — $1M en 2027, $2M (7%) en 2028, $2.4M (8%) en 2029'
 ws['A2'].font = Font(name=ARIAL, size=11, bold=True)
@@ -525,10 +601,10 @@ ch.series[1].graphicalProperties.line.width = 28000
 ws.add_chart(ch, 'I18')
 R0 = 36
 ws.cell(row=R0 - 1, column=1, value='WIGs de soporte — estado al último dato ingresado').font = F_SECT
-hdrs = ['#', 'WIG de soporte', 'Dueño', 'Equipo', 'Meta', 'Último real', 'Estado', 'Ir a pestaña']
+hdrs = ['#', 'WIG de soporte', 'Dueño', 'Equipo', 'Meta', 'Último real', 'Estado', 'Captura del lag', 'Ir a pestaña']
 for c, h in enumerate(hdrs, 1):
     cell = ws.cell(row=R0, column=c, value=h)
-    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = CENTER; cell.border = BORDER
+    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = WRAPC; cell.border = BORDER
 for i, w in enumerate(WIGS):
     r = R0 + 1 + i
     t, last = w['tab'], lasts[w['tab']]
@@ -542,14 +618,42 @@ for i, w in enumerate(WIGS):
     lr.font = F_LINK; lr.number_format = w['fmt']
     es = ws.cell(row=r, column=7, value=f'=IFERROR(LOOKUP(2,1/({q}!$D${DATA0}:$D${last}<>""),{q}!$H${DATA0}:$H${last}),"Sin datos")')
     es.font = F_LINK; es.alignment = CENTER
-    lk = ws.cell(row=r, column=8, value=t); lk.hyperlink = f"#'{t}'!A1"; lk.font = Font(name=ARIAL, size=10, color='0563C1', underline='single')
-    for c in range(1, 9):
+    # captura del lag: equipo (E4) · responsable (B6) — fuente (B7) de la pestaña del WIG.
+    # Concatenación con & (evita TEXTJOIN, que LibreOffice headless no recalcula).
+    cap = ws.cell(row=r, column=8,
+                  value=f'={q}!$E$4&IF({q}!$B$6=""," "," · "&{q}!$B$6)&IF({q}!$B$7=""," "," — "&{q}!$B$7)')
+    cap.font = F_LINK; cap.alignment = WRAP
+    lk = ws.cell(row=r, column=9, value=t); lk.hyperlink = f"#'{t}'!A1"; lk.font = Font(name=ARIAL, size=10, color='0563C1', underline='single')
+    for c in range(1, 10):
         ws.cell(row=r, column=c).border = BORDER
         if i % 2 == 1: ws.cell(row=r, column=c).fill = FILL_GREY
 estado_cf(ws, f'G{R0 + 1}:G{R0 + len(WIGS)}')
-for cl, wd in {'A': 5, 'B': 52, 'C': 16, 'D': 30, 'E': 11, 'F': 11, 'G': 11, 'H': 16}.items():
+for cl, wd in {'A': 5, 'B': 46, 'C': 16, 'D': 26, 'E': 11, 'F': 11, 'G': 11, 'H': 34, 'I': 16}.items():
     ws.column_dimensions[cl].width = wd
 for i in range(len(WIGS)): ws.row_dimensions[R0 + 1 + i].height = 30
+
+# --- Hitos por WIG — metas binarias con fecha (Logrado / En curso / Pendiente) ---
+HR = R0 + len(WIGS) + 3   # deja una fila en blanco bajo la tabla de soporte
+ws.cell(row=HR, column=1, value='Hitos por WIG — metas binarias con fecha objetivo').font = F_SECT
+h_hdrs = ['#', 'WIG', 'Logrado', 'En curso', 'Pendiente', 'Próxima fecha']
+for c, h in enumerate(h_hdrs, 1):
+    cell = ws.cell(row=HR + 1, column=c, value=h)
+    cell.font = F_HDR; cell.fill = FILL_HDR; cell.alignment = WRAPC; cell.border = BORDER
+for i, w in enumerate(WIGS):
+    r = HR + 2 + i
+    t = w['tab']; q = f"'{t}'"
+    g0, g1 = hitos_ranges[t]
+    ws.cell(row=r, column=1, value=i + 1).font = F_FORM
+    nm = ws.cell(row=r, column=2, value=w['title'].split('— ')[1]); nm.font = F_FORM; nm.alignment = WRAP
+    for c, est in ((3, 'Logrado'), (4, 'En curso'), (5, 'Pendiente')):
+        cc = ws.cell(row=r, column=c, value=f'=COUNTIF({q}!$H${g0}:$H${g1},"{est}")')
+        cc.font = F_LINK; cc.alignment = CENTER
+    fc = ws.cell(row=r, column=6, value=f'=IF(COUNT({q}!$G${g0}:$G${g1})=0,"",MIN({q}!$G${g0}:$G${g1}))')
+    fc.font = F_LINK; fc.number_format = 'dd-mmm-yy'; fc.alignment = CENTER
+    for c in range(1, 7):
+        ws.cell(row=r, column=c).border = BORDER
+        if i % 2 == 1: ws.cell(row=r, column=c).fill = FILL_GREY
+for i in range(len(WIGS)): ws.row_dimensions[HR + 2 + i].height = 26
 
 # ---------- Instrucciones ----------
 ins = wb.create_sheet('Instrucciones')
