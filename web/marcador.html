@@ -987,7 +987,16 @@ function loadFile(file){
     try{
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
       applyWorkbook(wb, file.name);
-    }catch(err){alert('No se pudo leer el archivo. Verifica que sea el Tablero_WIG_4DX_GBM.xlsx.\n\n'+err.message);}
+    }catch(err){
+      // mismo lenguaje de error que loadFromUrl: aviso en pantalla, sin alert()
+      console.error('loadFile',err);
+      if(slides.length){ $('#weekinfo').textContent='⚠ Archivo no válido — mostrando datos anteriores'; }
+      else{
+        $('#drop').classList.remove('hidden');
+        const p=$('#dropbox p');
+        if(p) p.innerHTML='No se pudo leer el archivo — verifica que sea el <span class="file">Tablero_WIG_4DX_GBM.xlsx</span>.<br>'+esc(err.message);
+      }
+    }
   };
   rd.readAsArrayBuffer(file);
 }
