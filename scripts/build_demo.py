@@ -18,7 +18,7 @@ const EMBEDDED_B64='{b64}';
     for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
     const wb=XLSX.read(arr,{{type:'array'}});
     document.getElementById('drop').classList.add('hidden');
-    document.getElementById('weekinfo').textContent='DATOS DE DEMOSTRACION';
+    document.getElementById('weekinfo').textContent='DATOS DE DEMOSTRACIÓN';
     buildSlides(parseWorkbook(wb));
   }}catch(e){{console.error('demo load',e);}}
 }})();
