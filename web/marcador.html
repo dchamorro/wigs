@@ -94,14 +94,14 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .yrchips{display:inline-flex;gap:.6vh;margin-left:1vh;vertical-align:middle}
 .yrchip{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:1.7vh;letter-spacing:.06em;padding:.2vh 1.2vh;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer}
 .yrchip.on{background:var(--gold);border-color:var(--gold);color:#1a1408}
-.yrmetric{font-size:1.7vh;color:var(--faint);margin-top:.2vh}
+.yrmetric{font-size:1.7vh;color:var(--dim);margin-top:.2vh}
 .verdict{margin-left:auto;text-align:right;flex:none}
 .verdict .chip{display:inline-block;font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:3.6vh;letter-spacing:.1em;padding:.6vh 1.4vw;border-radius:.8vh;text-transform:uppercase}
 .chip.win{color:var(--win);background:var(--win-bg);border:1px solid var(--win)}
 .chip.risk{color:var(--risk);background:var(--risk-bg);border:1px solid var(--risk)}
 .chip.lose{color:var(--lose);background:var(--lose-bg);border:1px solid var(--lose)}
 .chip.none{color:var(--faint);background:rgba(90,111,146,.12);border:1px solid var(--faint)}
-.verdict .asof{margin-top:.8vh;color:var(--faint);font-size:1.5vh}
+.verdict .asof{margin-top:.8vh;color:var(--dim);font-size:1.5vh}
 
 .body{flex:1;display:grid;grid-template-columns:26vw 1fr;gap:2vw;min-height:0}
 .scorecol{display:flex;flex-direction:column;gap:1.6vh}
@@ -130,7 +130,7 @@ canvas{flex:1;width:100%;min-height:0}
 .lead.main{border-color:var(--gold)}
 .lead[data-k].main:hover{border-color:var(--blue)}
 .lead .tag{font-size:1.2vh;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;font-weight:600;display:flex;align-items:center}
-.lead .more{margin-left:auto;color:var(--faint);letter-spacing:.08em;font-weight:600}
+.lead .more{margin-left:auto;color:var(--dim);letter-spacing:.08em;font-weight:600}
 .lead .name{font-size:1.55vh;font-weight:500;color:var(--ink);line-height:1.25;height:3.9vh;overflow:hidden}
 .lead .vizbody{display:flex;align-items:center;gap:.7vw;flex:1;min-height:5.4vh}
 .lead .pct{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:3vh;font-variant-numeric:tabular-nums;margin-left:auto;line-height:1}
@@ -158,10 +158,10 @@ canvas{flex:1;width:100%;min-height:0}
 #dropbox p{color:var(--dim);font-size:2.2vh;margin-top:1.2vh}
 #dropbox .file{color:var(--gold)}
 #fileinput{display:none}
-.hint{color:var(--faint);font-size:1.7vh}
+.hint{color:var(--dim);font-size:1.7vh}
 
 /* footer controls */
-#foot{flex:none;display:flex;align-items:center;gap:1.5vw;padding:1vh 2vw;border-top:1px solid var(--line);color:var(--faint);font-size:1.5vh}
+#foot{flex:none;display:flex;align-items:center;gap:1.5vw;padding:1vh 2vw;border-top:1px solid var(--line);color:var(--dim);font-size:1.5vh}
 #foot button{background:var(--panel2);color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:.5vh 1vw;font-size:1.5vh;cursor:pointer;font-family:inherit}
 #foot button:hover{color:var(--ink);border-color:var(--blue)}
 #foot .sp{margin-left:auto}
@@ -187,28 +187,28 @@ canvas{flex:1;width:100%;min-height:0}
 .dstat .val{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:4.2vh;font-variant-numeric:tabular-nums;line-height:1.1}
 .dstat .sub{font-size:1.6vh;color:var(--dim)}
 .dsec .lbl{font-size:1.6vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.8vh;display:flex;gap:1vw;align-items:baseline}
-.dsec .lbl .cnt{color:var(--faint);text-transform:none;letter-spacing:0}
+.dsec .lbl .cnt{color:var(--dim);text-transform:none;letter-spacing:0}
 .dchart{background:var(--panel2);border:1px solid var(--line);border-radius:1.2vh;padding:1.4vh 1.2vw}
 .dchart svg{width:100%;height:18vh;display:block}
-.dxlabels{display:flex;justify-content:space-between;color:var(--faint);font-size:1.4vh;margin-top:.5vh}
+.dxlabels{display:flex;justify-content:space-between;color:var(--dim);font-size:1.4vh;margin-top:.5vh}
 .tasks{display:flex;flex-direction:column;gap:.7vh}
 .task{display:flex;align-items:flex-start;gap:1vw;background:var(--panel2);border:1px solid var(--line);border-radius:1vh;padding:1.2vh 1.2vw;font-size:1.9vh}
 .task .mark{flex:none;width:3.2vh;height:3.2vh;min-width:24px;min-height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8vh;font-weight:700;border:2px solid var(--faint);color:var(--faint)}
 .task.done .mark{border-color:var(--win);color:var(--win);background:var(--win-bg)}
 .task.done .txt{color:var(--dim)}
-.task .meta{margin-left:auto;flex:none;text-align:right;color:var(--faint);font-size:1.5vh;line-height:1.4}
+.task .meta{margin-left:auto;flex:none;text-align:right;color:var(--dim);font-size:1.5vh;line-height:1.4}
 .task .meta b{color:var(--dim);font-weight:600}
-.notasks{color:var(--faint);font-size:1.8vh;padding:1.5vh 0}
-.task .meta .badge{display:inline-block;padding:.2vh .8vw;border-radius:.8vh;font-size:1.3vh;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--faint);color:var(--faint)}
+.notasks{color:var(--dim);font-size:1.8vh;padding:1.5vh 0}
+.task .meta .badge{display:inline-block;padding:.2vh .8vw;border-radius:.8vh;font-size:1.3vh;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--faint);color:var(--dim)}
 .task .meta .badge.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
 .task .meta .badge.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
 .capgrid{display:flex;flex-wrap:wrap;gap:1vw}
 .capgrid>div{flex:1 1 38%;background:var(--panel2);border:1px solid var(--line);border-radius:1vh;padding:1.1vh 1.2vw;font-size:1.9vh}
-.capgrid .caplbl{display:block;color:var(--faint);font-size:1.4vh;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4vh}
+.capgrid .caplbl{display:block;color:var(--dim);font-size:1.4vh;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4vh}
 /* sección "Temas puntuales" por WIG (metas binarias) — tira bajo los leads */
 .temas{flex:none}
 .temascap{font-size:1.5vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.7vh}
-.temascap .cnt{color:var(--faint);text-transform:none;letter-spacing:0;margin-left:.6vw}
+.temascap .cnt{color:var(--dim);text-transform:none;letter-spacing:0;margin-left:.6vw}
 .temarow{display:flex;flex-wrap:wrap;gap:.7vw}
 .temachip{display:flex;align-items:center;gap:.7vw;background:var(--panel2);border:1px solid var(--line);border-left:.4vh solid var(--faint);border-radius:1vh;padding:.7vh 1vw;font-size:1.7vh;max-width:32vw}
 .temachip.win{border-left-color:var(--win)} .temachip.risk{border-left-color:var(--risk)}
@@ -219,7 +219,7 @@ canvas{flex:1;width:100%;min-height:0}
 /* tira de estado por WIG en el slide de compañía ($1M NAT) */
 .wigstatus{flex:none}
 .wscap{font-size:1.5vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.7vh}
-.wscap .cnt{color:var(--faint);text-transform:none;letter-spacing:0;margin-left:.6vw}
+.wscap .cnt{color:var(--dim);text-transform:none;letter-spacing:0;margin-left:.6vw}
 .wsrow{display:grid;grid-template-columns:repeat(6,1fr);gap:.5vw}
 .wschip{display:flex;align-items:center;gap:.5vw;background:var(--panel2);border:1px solid var(--line);border-left:.35vh solid var(--faint);border-radius:.8vh;padding:.45vh .6vw;font-family:inherit;color:var(--ink);cursor:pointer;text-align:left;min-width:0}
 .wschip:hover{background:var(--panel)}
@@ -527,10 +527,10 @@ function drawChart(cv,w){
   const pad=(hi-lo)*.08; hi+=pad; if(lo<0)lo-=pad;
   const X=i=>P.l+(W-P.l-P.r)*(rows.length<2?0:i/(rows.length-1));
   const Y=v=>P.t+(H-P.t-P.b)*(1-(v-lo)/(hi-lo));
-  const C={line:cssv('--line'),faint:cssv('--faint'),blue:cssv('--blue'),ink:cssv('--ink'),
+  const C={line:cssv('--line'),faint:cssv('--faint'),dim:cssv('--dim'),blue:cssv('--blue'),ink:cssv('--ink'),
     fwin:cssv('--fill-win'),flose:cssv('--fill-lose')};
   // gridlines
-  ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.fillStyle=C.faint;
+  ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.fillStyle=C.dim;   // rótulos de ejes legibles (AA); --faint queda para trazos
   ctx.font=(12*devicePixelRatio*.85)+'px Inter';
   for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4, y=Y(v);
     ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(W-P.r,y);ctx.stroke();
