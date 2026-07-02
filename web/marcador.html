@@ -569,8 +569,9 @@ function drawChart(cv,w){
   }
 }
 
-function colorFor(p){return p==null?'var(--faint)':p>=1?'var(--win)':p>=.8?'var(--risk)':'var(--lose)'}
-function clsFor(p){return p==null?'none':p>=1?'win':p>=.8?'risk':'lose'}
+/* mismo semáforo que el Excel y verdictOf: En meta ≥95% · Riesgo 80–95% · Atrasado <80% */
+function colorFor(p){return p==null?'var(--faint)':p>=.95?'var(--win)':p>=.8?'var(--risk)':'var(--lose)'}
+function clsFor(p){return p==null?'none':p>=.95?'win':p>=.8?'risk':'lose'}
 function lastVals(w,k,n){
   const li=lastDataIndex(w.rows); const out=[];
   if(li<0) return out;
@@ -871,7 +872,7 @@ function openDetail(w,k){
   const fmt=ld.fmt||fmtNum;
   // racha: semanas en meta de las últimas N con dato
   let hits=0,tot=0;
-  for(let i=Math.max(0,li-11);i<=li;i++){const v=w.rows[i]&&w.rows[i].lv[k];if(v!=null){tot++;if(v>=1)hits++;}}
+  for(let i=Math.max(0,li-11);i<=li;i++){const v=w.rows[i]&&w.rows[i].lv[k];if(v!=null){tot++;if(v>=.95)hits++;}}
   // captura del dato (equipo · responsable · fuente) — por lead, con respaldo al del lag
   const capEq=(ld.equipo||w.equipo||'').trim();
   const capResp=(ld.resp||w.responsable||'').trim();
