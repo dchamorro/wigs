@@ -75,8 +75,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 /* slides */
 #stage{flex:1;position:relative;overflow:hidden}
-.slide{position:absolute;inset:0;padding:2.4vh 2.4vw;display:none;opacity:0;transition:opacity .55s ease}
-.slide.show{display:flex;opacity:1;flex-direction:column;gap:1.5vh}
+.slide{position:absolute;inset:0;padding:2.4vh 2.4vw;display:none;opacity:0}
+/* animation (no transition): un transition desde display:none nunca corre */
+.slide.show{display:flex;opacity:1;flex-direction:column;gap:1.5vh;animation:slidein .55s ease}
+@keyframes slidein{from{opacity:0}to{opacity:1}}
 
 .head{display:flex;align-items:flex-start;gap:2vw}
 .eyebrow{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:2vh;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
@@ -231,7 +233,7 @@ canvas{flex:1;width:100%;min-height:0}
 .wschip .wsdot.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
 .wschip .wsdot.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
 .wschip .wsdot.lose{border-color:var(--lose);color:var(--lose);background:var(--lose-bg)}
-@media (prefers-reduced-motion: reduce){.slide{transition:none}#detail,#dcard{transition:none}}
+@media (prefers-reduced-motion: reduce){.slide.show{animation:none}#detail,#dcard{transition:none}}
 /* pantallas táctiles: blancos de toque grandes */
 @media (pointer:coarse){
   #foot button{padding:1.4vh 2vw;font-size:1.8vh;min-height:44px}
