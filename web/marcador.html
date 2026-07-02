@@ -218,7 +218,7 @@ canvas{flex:1;width:100%;min-height:0}
 .temachip .ticon{flex:none;width:2.6vh;height:2.6vh;min-width:20px;min-height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5vh;font-weight:800;border:1.5px solid var(--faint);color:var(--faint)}
 .temachip .ticon.win{border-color:var(--win);color:var(--win);background:var(--win-bg)} .temachip .ticon.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
 .temachip .ttext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.temachip .ttext b{color:var(--dim)}
+.temachip .tdate{flex:none;color:var(--dim);font-weight:700;white-space:nowrap} /* la fecha no se trunca; se trunca el título */
 /* tira de estado por WIG en el slide de compañía ($1M NAT) */
 .wigstatus{flex:none}
 .wscap{font-size:1.5vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.7vh}
@@ -688,7 +688,7 @@ function temasHTML(w){
   const chips=items.map(h=>`
     <div class="temachip ${sc(h)}">
       <span class="ticon ${sc(h)}">${ic(h)}</span>
-      <span class="ttext">${esc(h.text)}${h.fecha?` · <b>${esc(h.fecha)}</b>`:''}</span>
+      <span class="ttext">${esc(h.text)}</span>${h.fecha?`<span class="tdate">${esc(h.fecha)}</span>`:''}
     </div>`).join('');
   return `<div class="temas">
     <div class="temascap cond">Temas puntuales <span class="cnt">${done}/${w.hitos.length} logrados · meta binaria sí/no</span></div>
