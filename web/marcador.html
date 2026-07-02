@@ -1062,7 +1062,7 @@ document.addEventListener('keydown',e=>{
 /* cualquier interacción reinicia el reloj de inactividad */
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,resetIdle,{passive:true}));
 applyTheme((()=>{try{return localStorage.getItem('wig_theme')||'dark';}catch(e){return 'dark';}})());
-window.addEventListener('resize',()=>{if(slides[idx]){const cv=slides[idx].el.querySelector('canvas');if(cv)drawChart(cv,slides[idx].w);}});
+window.addEventListener('resize',()=>{if(slides[idx]){const cv=slides[idx].el.querySelector('canvas');if(cv)drawChart(cv,chartTarget(slides[idx].w));}});
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toLocaleTimeString('es-NI',{hour:'2-digit',minute:'2-digit'});},1000);
 </script>
 </body>
