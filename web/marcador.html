@@ -972,6 +972,10 @@ function closeDetail(){
 }
 
 function applyWorkbook(wb, label){
+  // SheetJS interpreta casi cualquier archivo como CSV ("Sheet1"); sin este
+  // guard un archivo basura reemplazaba el tablero completo por un slide roto.
+  // El contrato garantiza la pestaña Dashboard en todo tablero.
+  if(!wb.Sheets['Dashboard']) throw new Error('No parece el Tablero WIG: falta la pestaña «Dashboard».');
   const wigs=parseWorkbook(wb);
   if(!wigs.length) throw new Error('No se encontraron pestañas de WIG');
   $('#drop').classList.add('hidden');
