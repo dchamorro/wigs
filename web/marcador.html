@@ -119,13 +119,15 @@ canvas{flex:1;width:100%;min-height:0}
 
 .leads{flex:none;display:grid;gap:.8vw;grid-template-columns:repeat(4,1fr)}
 .leads.cols3{grid-template-columns:repeat(3,1fr)}
-.lead{background:var(--panel);border:1px solid var(--line);border-radius:1vh;padding:1vh 1vw;display:flex;flex-direction:column;gap:.4vh;min-width:0;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s,transform .1s;user-select:none}
-.lead:hover{border-color:var(--blue)}
-.lead:active{transform:scale(.98)}
-.lead:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.lead{background:var(--panel);border:1px solid var(--line);border-radius:1vh;padding:1vh 1vw;display:flex;flex-direction:column;gap:.4vh;min-width:0;user-select:none}
+/* sólo las tarjetas de lead reales ([data-k]) abren detalle; las tiles decorativas
+   (trayectoria NAT, tiles de año) comparten la estética pero no el affordance */
+.lead[data-k]{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s,transform .1s}
+.lead[data-k]:hover{border-color:var(--blue)}
+.lead[data-k]:active{transform:scale(.98)}
+.lead[data-k]:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .lead.main{border-color:var(--gold)}
-.lead.main:hover{border-color:var(--blue)}
+.lead[data-k].main:hover{border-color:var(--blue)}
 .lead .tag{font-size:1.2vh;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;font-weight:600;display:flex;align-items:center}
 .lead .more{margin-left:auto;color:var(--faint);letter-spacing:.08em;font-weight:600}
 .lead .name{font-size:1.55vh;font-weight:500;color:var(--ink);line-height:1.25;height:3.9vh;overflow:hidden}
@@ -1020,7 +1022,7 @@ $('#interval').onchange=restartTimer;
 /* toque/clic en un lead → detalle (delegado: las tiles se reconstruyen con cada carga) */
 $('#stage').addEventListener('click',e=>{
   if(swiped){swiped=false;return;}            // un deslizamiento no abre detalle
-  const tile=e.target.closest('.lead');
+  const tile=e.target.closest('.lead[data-k]');
   if(tile&&slides[idx]) openDetail(slides[idx].w,+tile.dataset.k);
 });
 /* deslizar ←/→ sobre el escenario para cambiar de WIG (pantalla táctil) */
@@ -1037,7 +1039,7 @@ $('#stage').addEventListener('touchend',e=>{
   }
 },{passive:true});
 $('#stage').addEventListener('keydown',e=>{
-  if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('lead')){
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches('.lead[data-k]')){
     e.preventDefault(); e.stopPropagation();
     if(slides[idx]) openDetail(slides[idx].w,+e.target.dataset.k);
   }
