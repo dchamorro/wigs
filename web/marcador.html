@@ -61,11 +61,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 /* top bar */
 #bar{display:flex;align-items:center;gap:1.4vw;padding:1.2vh 2vw;border-bottom:1px solid var(--line);flex:none}
-#brand{font-family:'Saira Condensed';font-weight:800;font-size:2.6vh;letter-spacing:.14em;text-transform:uppercase}
+#brand{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:2.6vh;letter-spacing:.14em;text-transform:uppercase}
 #brand span{color:var(--blue)}
 #companywig{color:var(--dim);font-size:1.7vh;font-weight:500}
 #bar .right{margin-left:auto;display:flex;align-items:center;gap:1.6vw}
-#clock{font-family:'Saira Condensed';font-weight:700;font-size:2.4vh;letter-spacing:.06em;color:var(--ink)}
+#clock{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:2.4vh;letter-spacing:.06em;color:var(--ink)}
 #weekinfo{font-size:1.6vh;color:var(--dim)}
 #dots{display:flex;gap:.5vw}
 .dot{width:1vh;height:1vh;border-radius:50%;background:var(--line);transition:all .3s}
@@ -78,8 +78,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .slide.show{display:flex;opacity:1;flex-direction:column;gap:1.5vh}
 
 .head{display:flex;align-items:flex-start;gap:2vw}
-.eyebrow{font-family:'Saira Condensed';font-weight:700;font-size:2vh;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
-.wigtitle{font-family:'Saira Condensed';font-weight:800;font-size:4.4vh;line-height:1.04;text-transform:none;max-width:62vw}
+.eyebrow{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:2vh;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
+.wigtitle{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:4.4vh;line-height:1.04;text-transform:none;max-width:62vw}
 .meta-line{margin-top:.8vh;color:var(--dim);font-size:1.9vh}
 .meta-line b{color:var(--ink);font-weight:600}
 /* tira de trayectoria NAT (slide de compañía) */
@@ -91,11 +91,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .trajbl b{color:var(--gold);font-weight:800}
 /* chips de año en el gráfico multi-anual del slide de compañía */
 .yrchips{display:inline-flex;gap:.6vh;margin-left:1vh;vertical-align:middle}
-.yrchip{font-family:'Saira Condensed';font-weight:700;font-size:1.7vh;letter-spacing:.06em;padding:.2vh 1.2vh;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer}
+.yrchip{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:1.7vh;letter-spacing:.06em;padding:.2vh 1.2vh;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer}
 .yrchip.on{background:var(--gold);border-color:var(--gold);color:#1a1408}
 .yrmetric{font-size:1.7vh;color:var(--faint);margin-top:.2vh}
 .verdict{margin-left:auto;text-align:right;flex:none}
-.verdict .chip{display:inline-block;font-family:'Saira Condensed';font-weight:800;font-size:3.6vh;letter-spacing:.1em;padding:.6vh 1.4vw;border-radius:.8vh;text-transform:uppercase}
+.verdict .chip{display:inline-block;font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:3.6vh;letter-spacing:.1em;padding:.6vh 1.4vw;border-radius:.8vh;text-transform:uppercase}
 .chip.win{color:var(--win);background:var(--win-bg);border:1px solid var(--win)}
 .chip.risk{color:var(--risk);background:var(--risk-bg);border:1px solid var(--risk)}
 .chip.lose{color:var(--lose);background:var(--lose-bg);border:1px solid var(--lose)}
@@ -106,7 +106,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .scorecol{display:flex;flex-direction:column;gap:1.6vh}
 .bignum{background:var(--panel);border:1px solid var(--line);border-radius:1.2vh;padding:1.6vh 1.4vw;flex:1;display:flex;flex-direction:column;justify-content:center}
 .bignum .lbl{font-size:1.6vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
-.bignum .val{font-family:'Saira Condensed';font-weight:800;font-size:5.6vh;line-height:1.05;font-variant-numeric:tabular-nums}
+.bignum .val{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:5.6vh;line-height:1.05;font-variant-numeric:tabular-nums}
 .bignum .sub{font-size:1.7vh;color:var(--dim)}
 .val.win{color:var(--win)} .val.risk{color:var(--risk)} .val.lose{color:var(--lose)} .val.plain{color:var(--ink)}
 
@@ -132,19 +132,19 @@ canvas{flex:1;width:100%;min-height:0}
 .lead .more{margin-left:auto;color:var(--faint);letter-spacing:.08em;font-weight:600}
 .lead .name{font-size:1.55vh;font-weight:500;color:var(--ink);line-height:1.25;height:3.9vh;overflow:hidden}
 .lead .vizbody{display:flex;align-items:center;gap:.7vw;flex:1;min-height:5.4vh}
-.lead .pct{font-family:'Saira Condensed';font-weight:800;font-size:3vh;font-variant-numeric:tabular-nums;margin-left:auto;line-height:1}
+.lead .pct{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:3vh;font-variant-numeric:tabular-nums;margin-left:auto;line-height:1}
 .pct.win{color:var(--win)}.pct.risk{color:var(--risk)}.pct.lose{color:var(--lose)}.pct.none{color:var(--faint)}
 .bars{display:flex;align-items:flex-end;gap:.25vw;height:4.2vh;flex:1}
 .bars b{flex:1;max-width:1vw;border-radius:2px 2px 0 0;background:var(--line);display:block}
 .gauge{width:6vh;height:6vh;flex:none}
-.gauge text{font-family:'Saira Condensed'}
+.gauge text{font-family:'Saira Condensed','Arial Narrow',sans-serif}
 .gsub{font-size:1.4vh;color:var(--dim);line-height:1.3}
 .spark{flex:1;height:4.8vh;min-width:0}
 .btrack{flex:1;height:1.6vh;background:var(--panel2);border:1px solid var(--line);border-radius:1vh;position:relative;overflow:hidden}
 .bfill{position:absolute;left:0;top:0;bottom:0;border-radius:1vh}
 .btick{position:absolute;top:-0.4vh;bottom:-0.4vh;left:80%;width:2px;background:var(--dim)}
 .bignumlead{display:flex;align-items:baseline;gap:.7vw;flex:1}
-.bignumlead .pct-big{font-family:'Saira Condensed';font-weight:800;font-size:4.6vh;line-height:1;font-variant-numeric:tabular-nums}
+.bignumlead .pct-big{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:4.6vh;line-height:1;font-variant-numeric:tabular-nums}
 .delta{font-size:1.6vh;color:var(--dim)}
 .delta b{font-weight:700}
 
@@ -153,7 +153,7 @@ canvas{flex:1;width:100%;min-height:0}
 #drop.hidden{display:none}
 #dropbox{border:2px dashed var(--faint);border-radius:2vh;padding:6vh 6vw;text-align:center;cursor:pointer;transition:border-color .2s}
 #dropbox:hover,#dropbox.over{border-color:var(--blue)}
-#dropbox h1{font-family:'Saira Condensed';font-weight:800;font-size:5vh;letter-spacing:.04em}
+#dropbox h1{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:5vh;letter-spacing:.04em}
 #dropbox p{color:var(--dim);font-size:2.2vh;margin-top:1.2vh}
 #dropbox .file{color:var(--gold)}
 #fileinput{display:none}
@@ -174,7 +174,7 @@ canvas{flex:1;width:100%;min-height:0}
 #detail.open #dcard{transform:none}
 .dhead{display:flex;align-items:flex-start;gap:1.5vw;padding:2.2vh 2vw 1.4vh;border-bottom:1px solid var(--line)}
 .dhead .tag{font-size:1.5vh;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;font-weight:600}
-.dhead h2{font-family:'Saira Condensed';font-weight:800;font-size:3.4vh;line-height:1.1;margin-top:.4vh}
+.dhead h2{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:3.4vh;line-height:1.1;margin-top:.4vh}
 .dhead .ctx{color:var(--dim);font-size:1.7vh;margin-top:.5vh}
 #dclose{margin-left:auto;flex:none;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:1.2vh;
   width:6vh;height:6vh;min-width:48px;min-height:48px;font-size:3vh;cursor:pointer;line-height:1}
@@ -183,7 +183,7 @@ canvas{flex:1;width:100%;min-height:0}
 .dstats{display:grid;grid-template-columns:repeat(3,1fr);gap:1vw}
 .dstat{background:var(--panel2);border:1px solid var(--line);border-radius:1.2vh;padding:1.4vh 1.2vw}
 .dstat .lbl{font-size:1.5vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
-.dstat .val{font-family:'Saira Condensed';font-weight:800;font-size:4.2vh;font-variant-numeric:tabular-nums;line-height:1.1}
+.dstat .val{font-family:'Saira Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:4.2vh;font-variant-numeric:tabular-nums;line-height:1.1}
 .dstat .sub{font-size:1.6vh;color:var(--dim)}
 .dsec .lbl{font-size:1.6vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.8vh;display:flex;gap:1vw;align-items:baseline}
 .dsec .lbl .cnt{color:var(--faint);text-transform:none;letter-spacing:0}
@@ -560,7 +560,7 @@ function drawChart(cv,w){
   ctx.stroke();
   if(li>=0&&realS[li]!=null){
     ctx.fillStyle=C.blue;ctx.beginPath();ctx.arc(X(li),Y(realS[li]),5*devicePixelRatio*.7,0,7);ctx.fill();
-    ctx.fillStyle=C.ink;ctx.font='bold '+(14*devicePixelRatio*.85)+'px "Saira Condensed"';
+    ctx.fillStyle=C.ink;ctx.font='bold '+(14*devicePixelRatio*.85)+'px "Saira Condensed","Arial Narrow",sans-serif';
     ctx.fillText(w.fmt(realS[li]),Math.min(X(li)+10,W-110),Y(realS[li])-10);
   }
 }
