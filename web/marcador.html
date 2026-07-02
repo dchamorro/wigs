@@ -894,7 +894,7 @@ function openDetail(w,k){
     ? `<div class="dsec"><div class="lbl">Temas puntuales <span class="cnt">${hitDone+' de '+hitos.length+' logrados'}</span></div>
         <div class="tasks">${hitos.map(h=>`
         <div class="task${h.done?' done':''}">
-          <div class="mark">${h.done?'✓':'◷'}</div>
+          <div class="mark">${h.done?'✓':/curso|progres|marcha/i.test(h.estado)?'◷':'○'}</div>
           <div class="txt">${esc(h.text)}${h.fecha?` <span class="cnt">· meta ${esc(h.fecha)}</span>`:''}</div>
           <div class="meta"><b>${esc(h.resp)}</b>${h.resp&&h.estado?'<br>':''}<span class="badge ${hitCls(h)}">${esc(h.estado||'')}</span></div>
         </div>`).join('')}</div></div>` : '';
@@ -903,7 +903,7 @@ function openDetail(w,k){
   const tasksHtml=tasks.length
     ? `<div class="tasks">${tasks.map(t=>`
         <div class="task${t.done?' done':''}">
-          <div class="mark">${t.done?'✓':''}</div>
+          <div class="mark">${t.done?'✓':'○'}</div>
           <div class="txt">${esc(t.text)}</div>
           <div class="meta"><b>${esc(t.resp)}</b>${t.resp&&t.label?'<br>':''}${esc(t.label)}</div>
         </div>`).join('')}</div>`
@@ -915,7 +915,7 @@ function openDetail(w,k){
   const initsHtml=inits.length
     ? `<div class="tasks">${inits.map(t=>`
         <div class="task${t.done?' done':''}">
-          <div class="mark">${t.done?'✓':''}</div>
+          <div class="mark">${t.done?'✓':/curso|progres|marcha/i.test(t.estado)?'◷':'○'}</div>
           <div class="txt">${esc(t.text)}</div>
           <div class="meta"><b>${esc(t.resp)}</b>${t.resp&&t.estado?'<br>':''}<span class="badge ${estCls(t)}">${esc(t.estado||'')}</span></div>
         </div>`).join('')}</div>`
