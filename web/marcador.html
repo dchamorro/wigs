@@ -38,7 +38,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   --win:#2FD27A; --risk:#F5B83D; --lose:#FF5A6E;
   --win-bg:rgba(47,210,122,.14); --risk-bg:rgba(245,184,61,.14); --lose-bg:rgba(255,90,110,.14);
   --glow:rgba(77,163,255,.08);
-  --fill-win:rgba(47,210,122,.16); --fill-lose:rgba(255,90,110,.16);
+  --fill-win:rgba(47,210,122,.16); --fill-lose:rgba(255,90,110,.16); --fill-neutral:rgba(90,111,146,.18);
   --scrim:rgba(3,8,18,.72); --shadow:0 24px 70px rgba(0,0,0,.55);
 }
 html[data-theme="light"]{
@@ -48,7 +48,7 @@ html[data-theme="light"]{
   --win:#0F9152; --risk:#B07F00; --lose:#D02E48;
   --win-bg:rgba(15,145,82,.10); --risk-bg:rgba(176,127,0,.10); --lose-bg:rgba(208,46,72,.10);
   --glow:rgba(23,105,201,.06);
-  --fill-win:rgba(15,145,82,.14); --fill-lose:rgba(208,46,72,.14);
+  --fill-win:rgba(15,145,82,.14); --fill-lose:rgba(208,46,72,.14); --fill-neutral:rgba(139,157,187,.22);
   --scrim:rgba(30,45,70,.45); --shadow:0 24px 70px rgba(21,35,60,.28);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -102,7 +102,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .chip.win{color:var(--win);background:var(--win-bg);border:1px solid var(--win)}
 .chip.risk{color:var(--risk);background:var(--risk-bg);border:1px solid var(--risk)}
 .chip.lose{color:var(--lose);background:var(--lose-bg);border:1px solid var(--lose)}
-.chip.none{color:var(--faint);background:rgba(90,111,146,.12);border:1px solid var(--faint)}
+.chip.none{color:var(--faint);background:var(--fill-neutral);border:1px solid var(--faint)}
 .chip.plain{color:var(--ink);background:var(--panel2);border:1px solid var(--line)} /* veredicto neutro (slides de año) */
 .verdict .asof{margin-top:.8vh;color:var(--dim);font-size:1.5vh}
 
@@ -531,7 +531,7 @@ function drawChart(cv,w){
   const X=i=>P.l+(W-P.l-P.r)*(rows.length<2?0:i/(rows.length-1));
   const Y=v=>P.t+(H-P.t-P.b)*(1-(v-lo)/(hi-lo));
   const C={line:cssv('--line'),faint:cssv('--faint'),dim:cssv('--dim'),blue:cssv('--blue'),ink:cssv('--ink'),
-    fwin:cssv('--fill-win'),flose:cssv('--fill-lose')};
+    fwin:cssv('--fill-win'),flose:cssv('--fill-lose'),fneutral:cssv('--fill-neutral')};
   // gridlines
   ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.fillStyle=C.dim;   // rótulos de ejes legibles (AA); --faint queda para trazos
   ctx.font=(12*devicePixelRatio*.85)+'px Inter';
@@ -548,7 +548,7 @@ function drawChart(cv,w){
     for(let i=1;i<=li;i++){
       if(realS[i-1]==null||realS[i]==null||metaS[i]==null)continue;
       const above=w.lowerBetter? (realS[i]<=metaS[i]) : (realS[i]>=metaS[i]);
-      ctx.fillStyle=w.neutralFill?C.faint:(above?C.fwin:C.flose);   // años: la brecha es neutra, no "atrasado"
+      ctx.fillStyle=w.neutralFill?C.fneutral:(above?C.fwin:C.flose);   // años: la brecha es neutra, no "atrasado"
       ctx.beginPath();
       ctx.moveTo(X(i-1),Y(realS[i-1]));ctx.lineTo(X(i),Y(realS[i]));
       ctx.lineTo(X(i),Y(metaS[i]));ctx.lineTo(X(i-1),Y(metaS[i-1]));ctx.closePath();ctx.fill();
