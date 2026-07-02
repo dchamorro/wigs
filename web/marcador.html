@@ -512,8 +512,12 @@ function drawChart(cv,w){
   ctx.scale(1,1);
   const P={l:80*devicePixelRatio/2,r:20,t:18,b:46};
   const rows=w.rows;
+  const li=lastDataIndex(rows);
   const metaS=rows.map(r=>w.acum?r.metaA:r.meta);
-  const realS=rows.map(r=>w.acum?r.realA:r.real);
+  // el real solo hasta el último periodo con dato: en los WIG acumulativos las
+  // filas futuras arrastran el acumulado por fórmula y dibujarlas pinta una
+  // línea plana que aparenta datos donde no los hay
+  const realS=rows.map((r,i)=>i>li?null:(w.acum?r.realA:r.real));
   const all=[...metaS,...realS].filter(v=>v!=null);
   if(!all.length) return;
   let lo=Math.min(0,...all), hi=Math.max(...all); if(hi===lo)hi=lo+1;
@@ -533,7 +537,6 @@ function drawChart(cv,w){
   ctx.textAlign='center';
   rows.forEach((r,i)=>{if(i%step===0||i===rows.length-1)ctx.fillText(r.label,X(i),H-14);});
   ctx.textAlign='left';
-  const li=lastDataIndex(rows);
   // fill between meta and real up to last data
   if(li>0){
     for(let i=1;i<=li;i++){
