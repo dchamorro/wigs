@@ -219,7 +219,7 @@ canvas{flex:1;width:100%;min-height:0}
 .temachip .ticon{flex:none;width:2.6vh;height:2.6vh;min-width:20px;min-height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5vh;font-weight:800;border:1.5px solid var(--faint);color:var(--faint)}
 .temachip .ticon.win{border-color:var(--win);color:var(--win);background:var(--win-bg)} .temachip .ticon.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
 .temachip .ttext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.temachip .tdate{flex:none;color:var(--dim);font-weight:700;white-space:nowrap} /* la fecha no se trunca; se trunca el título */
+.temachip .tdate{flex:none;color:var(--dim);font-weight:700;white-space:nowrap;max-width:10vw;overflow:hidden;text-overflow:ellipsis} /* la fecha no se trunca ante el título; max-width solo frena strings patológicos del Excel */
 /* tira de estado por WIG en el slide de compañía ($1M NAT) */
 .wigstatus{flex:none}
 .wscap{font-size:1.5vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.7vh}
@@ -977,7 +977,9 @@ function applyWorkbook(wb, label){
   // El contrato garantiza la pestaña Dashboard en todo tablero.
   if(!wb.Sheets['Dashboard']) throw new Error('No parece el Tablero WIG: falta la pestaña «Dashboard».');
   const wigs=parseWorkbook(wb);
-  if(!wigs.length) throw new Error('No se encontraron pestañas de WIG');
+  // exigir al menos un WIG de soporte real: un Dashboard suelto (o archivo
+  // hostil con esa pestaña) no debe reemplazar el tablero con slides vacíos
+  if(!wigs.some(x=>!x.company&&!x.yearPage)) throw new Error('No se encontraron pestañas de WIG');
   $('#drop').classList.add('hidden');
   $('#weekinfo').textContent=label;
   const keep=slides.length?idx:0;
@@ -1018,7 +1020,10 @@ async function loadFromUrl(){
     lastGoodLoad=Date.now();
   }catch(err){
     console.error('loadFromUrl',err);
-    if(lastGoodLoad){ $('#weekinfo').textContent='⚠ Sin conexión — mostrando últimos datos'; }
+    // distinguir archivo inválido de corte de red: un 200 con HTML de login o
+    // un xlsx corrupto no es "sin conexión" y esconderlo como tal engaña
+    const badFile=!(err instanceof TypeError)&&!/^HTTP /.test(err.message||'');
+    if(lastGoodLoad){ $('#weekinfo').textContent=badFile?'⚠ Tablero del servidor no válido — mostrando últimos datos':'⚠ Sin conexión — mostrando últimos datos'; }
     else{
       $('#drop').classList.remove('hidden');
       const p=$('#dropbox p');
