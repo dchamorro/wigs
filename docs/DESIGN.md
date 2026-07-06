@@ -289,7 +289,7 @@ PGX, login-gated on Azure.
 
 | Decision | Alternatives rejected | Why the current choice |
 |---|---|---|
-| **Excel as data source** | Airtable / Google Sheets / Power BI / small DB | Zero adoption cost for owners (principle 1). The others impose a new tool + login + ongoing ops. Deliberately a *starting* point until the cadence matures. **Airtable is now prototyped as "Option A"** (`excel/build_airtable.py`, [`docs/AIRTABLE.md`](./AIRTABLE.md)) — capture in Airtable, Excel stays the calc engine, contract untouched; also feeds per-person TRMNL e-ink cards (`web/trmnl_card_*.svg`). Exploratory, not the live source yet. |
+| **Excel as data source** | Airtable / Google Sheets / Power BI / small DB | Zero adoption cost for owners (principle 1). The others impose a new tool + login + ongoing ops. Deliberately a *starting* point until the cadence matures. |
 | **Fixed-position contract** | Named ranges / header-name parsing | Workbook is generated → positions are stable; positions are trivially unit-testable so drift fails CI, not the TV. |
 | **Self-contained HTML + SheetJS** | A served web app / framework / build step | Offline-first, no server dependency on the TV, no build toolchain; one file to deploy and dogfood. |
 | **Save-and-close on Samba** | Live co-editing (SharePoint) | Simplest thing that works for a handful of weekly editors; SharePoint is the documented escape hatch if it becomes painful. |
@@ -319,8 +319,7 @@ PGX, login-gated on Azure.
 
 ## 12. Out of scope / future (don't re-litigate without reason)
 
-SharePoint / co-editing; moving off Excel as the data source (Airtable "Option A" + TRMNL desktop
-cards are prototyped — see §9 and [`docs/AIRTABLE.md`](./AIRTABLE.md) — but not the live source);
+SharePoint / co-editing; moving off Excel as the data source; connecting TRMNL desktop cards to live data;
 weekly history & trend persistence; alerting when a WIG flips to *Atrasado* or an owner hasn't
 updated; multi-country rollout. See [`PRD` §9](./PRD.md) for the trade-offs already weighed.
 
@@ -332,6 +331,5 @@ updated; multi-country rollout. See [`PRD` §9](./PRD.md) for the trade-offs alr
 - [`tests/test_contract.py`](../tests/test_contract.py) — enforces the contract.
 - [`README.md`](../README.md) — quick start, production, Azure Monday ritual.
 - [`docs/AZURE_LOGIN.md`](./AZURE_LOGIN.md), [`docs/PUESTA-EN-MARCHA-AZURE.md`](./PUESTA-EN-MARCHA-AZURE.md) — Azure setup.
-- [`docs/AIRTABLE.md`](./AIRTABLE.md), [`excel/build_airtable.py`](../excel/build_airtable.py) — Airtable "Option A" + TRMNL desktop cards (exploratory).
 </content>
 </invoke>

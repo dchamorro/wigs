@@ -84,6 +84,35 @@ def main(inp, out):
             cs.cell(row=r,column=4,value=txt)
             cs.cell(row=r,column=5,value=resp)
             cs.cell(row=r,column=6,value=est)
+    # Captura del dato (demo) e Hitos (metas binarias con fecha) en varias pestañas
+    from datetime import date
+    def find_hitos(s):
+        for r in range(11, s.max_row+1):
+            v = s.cell(row=r, column=1).value
+            if isinstance(v,str) and (v.strip().startswith('Temas puntual') or v.strip().startswith('Hitos')): return r
+        return None
+    DEMO_CAPTURE = {  # (responsable que digita, fuente) — el equipo es E4 del WIG
+        '2. MV Advisory':  ('M. Aguilar', 'Pipeline CRM (semanal)'),
+        '6. Cero Expired': ('D. Lacayo', "Reporte de contratos 'expired/on-hold'"),
+    }
+    DEMO_HITOS = {
+        # override del hito 1 de WIG 1 → Logrado (verde) para mostrar estados mixtos
+        '1. Smart User 500':  [('Certificarse como Apple Authorized Service Provider',1,'Del - DEX',date(2026,9,30),'Logrado')],
+        '3. Negocios +30K GP':[('Cerrar primer negocio ancla > $30K GP',1,'Ventas',date(2027,3,31),'En curso')],
+        '6. Cero Expired':    [('Migrar 100% de contratos a renovación automática',5,'Customer Success',date(2027,6,30),'Pendiente')],
+    }
+    for tab,(resp,fte) in DEMO_CAPTURE.items():
+        if tab in wb.sheetnames:
+            wb[tab]['B6']=resp; wb[tab]['B7']=fte
+    for tab,hits in DEMO_HITOS.items():
+        if tab not in wb.sheetnames: continue
+        s=wb[tab]; hr=find_hitos(s)
+        if not hr: continue
+        for j,(txt,lead,resp,f,est) in enumerate(hits):
+            r=hr+2+j
+            s.cell(row=r,column=1,value=txt); s.cell(row=r,column=5,value=lead)
+            s.cell(row=r,column=6,value=resp); s.cell(row=r,column=7,value=f)
+            s.cell(row=r,column=8,value=est)
     wb.save(out)
     print('demo data ->', out)
 

@@ -11,10 +11,8 @@ tarjetas que el dispositivo rota:
   team      — Mi equipo      (lag acum. + tendencia + compromisos del equipo)
   incentive — Mi incentivo   (avance del variable, solo relativo, sin montos)
 
-Fuente de datos (adaptadores, ver más abajo):
+Fuente de datos:
   - from_json(path)      — fuente de trabajo y de pruebas (fixture local).
-  - from_airtable(...)   — pendiente: lee la base "WIGS" por `TRMNL ID`. Stub
-                           documentado; ver docs/AIRTABLE.md.
 
 Reglas de diseño e-ink (no romper): solo negro sobre blanco, sin grises; el
 semáforo es GLIFO, no color (● en meta · ◐ riesgo/ritmo · ○ atrasado);
@@ -276,27 +274,11 @@ KINDS = list(RENDERERS)
 def render_all(bundle):
     return {kind: fn(bundle) for kind, fn in RENDERERS.items()}
 
-# ── adaptadores de fuente de datos ────────────────────────────────────────────
+# ── fuente de datos ───────────────────────────────────────────────────────────
 def from_json(path):
     """Fuente de trabajo/pruebas: bundle normalizado desde un fixture local."""
     with open(path, encoding="utf-8") as f:
         return json.load(f)
-
-def from_airtable(base_id, token, trmnl_id):
-    """PENDIENTE — leer la base "WIGS" y armar el bundle de una persona.
-
-    Diseño (ver docs/AIRTABLE.md): por `TRMNL ID` ubicar al colaborador en
-    `Colaboradores`; sus WIG donde es `Líder` → `WIGs`/`Leads` + últimas
-    `Lead Readings`/`WIG Readings` para real vs meta y estado; sus `Compromisos`
-    de la semana; `Years`/`Backlog Readings`/`NAT Monthly` para la tarjeta de
-    compañía. El cálculo de acumulados/estado debe coincidir con build_wig.py.
-    El contenedor remoto de Claude no alcanza api.airtable.com; correr desde una
-    máquina con salida a internet.
-    """
-    raise NotImplementedError(
-        "from_airtable() aún no implementado — ver docs/AIRTABLE.md «Pendiente». "
-        "Hoy use --input con un fixture JSON (scripts/trmnl_sample.json)."
-    )
 
 # ── rasterización (opcional) ──────────────────────────────────────────────────
 def to_png(svg, out_path):

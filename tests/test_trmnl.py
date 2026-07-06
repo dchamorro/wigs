@@ -70,15 +70,6 @@ def test_glyph_semaphore_is_glyph_not_color():
         assert 'fill="#ccc"' not in svg and 'fill="gray"' not in svg, 'e-ink: sin grises'
 
 
-def test_airtable_adapter_is_documented_stub():
-    try:
-        t.from_airtable('appX', 'patX', 'maria-jose')
-    except NotImplementedError as e:
-        assert 'AIRTABLE.md' in str(e), 'el stub debe apuntar a la doc'
-    else:
-        assert False, 'from_airtable debe seguir siendo un stub explícito (NotImplementedError)'
-
-
 if __name__ == '__main__':
     fns = [v for k, v in sorted(globals().items()) if k.startswith('test_')]
     for fn in fns:

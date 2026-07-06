@@ -204,6 +204,34 @@ canvas{flex:1;width:100%;min-height:0}
 .task .meta .badge{display:inline-block;padding:.2vh .8vw;border-radius:.8vh;font-size:1.3vh;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--faint);color:var(--faint)}
 .task .meta .badge.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
 .task .meta .badge.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
+.capgrid{display:flex;flex-wrap:wrap;gap:1vw}
+.capgrid>div{flex:1 1 38%;background:var(--panel2);border:1px solid var(--line);border-radius:1vh;padding:1.1vh 1.2vw;font-size:1.9vh}
+.capgrid .caplbl{display:block;color:var(--faint);font-size:1.4vh;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4vh}
+/* sección "Temas puntuales" por WIG (metas binarias) — tira bajo los leads */
+.temas{flex:none}
+.temascap{font-size:1.5vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.7vh}
+.temascap .cnt{color:var(--faint);text-transform:none;letter-spacing:0;margin-left:.6vw}
+.temarow{display:flex;flex-wrap:wrap;gap:.7vw}
+.temachip{display:flex;align-items:center;gap:.7vw;background:var(--panel2);border:1px solid var(--line);border-left:.4vh solid var(--faint);border-radius:1vh;padding:.7vh 1vw;font-size:1.7vh;max-width:32vw}
+.temachip.win{border-left-color:var(--win)} .temachip.risk{border-left-color:var(--risk)}
+.temachip .ticon{flex:none;width:2.6vh;height:2.6vh;min-width:20px;min-height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5vh;font-weight:800;border:1.5px solid var(--faint);color:var(--faint)}
+.temachip .ticon.win{border-color:var(--win);color:var(--win);background:var(--win-bg)} .temachip .ticon.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
+.temachip .ttext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.temachip .ttext b{color:var(--dim)}
+/* tira de estado por WIG en el slide de compañía ($1M NAT) */
+.wigstatus{flex:none}
+.wscap{font-size:1.5vh;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.7vh}
+.wscap .cnt{color:var(--faint);text-transform:none;letter-spacing:0;margin-left:.6vw}
+.wsrow{display:grid;grid-template-columns:repeat(6,1fr);gap:.5vw}
+.wschip{display:flex;align-items:center;gap:.5vw;background:var(--panel2);border:1px solid var(--line);border-left:.35vh solid var(--faint);border-radius:.8vh;padding:.45vh .6vw;font-family:inherit;color:var(--ink);cursor:pointer;text-align:left;min-width:0}
+.wschip:hover{background:var(--panel)}
+.wschip.win{border-left-color:var(--win)} .wschip.risk{border-left-color:var(--risk)} .wschip.lose{border-left-color:var(--lose)}
+.wschip .wsn{flex:none;width:2vh;height:2vh;min-width:15px;min-height:15px;border-radius:.4vh;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1vh;background:var(--line);color:var(--ink)}
+.wschip .wsname{flex:1;min-width:0;font-size:1.25vh;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wschip .wsdot{flex:none;width:1.9vh;height:1.9vh;min-width:15px;min-height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.15vh;line-height:1;border:1.5px solid var(--faint);color:var(--faint)}
+.wschip .wsdot.win{border-color:var(--win);color:var(--win);background:var(--win-bg)}
+.wschip .wsdot.risk{border-color:var(--risk);color:var(--risk);background:var(--risk-bg)}
+.wschip .wsdot.lose{border-color:var(--lose);color:var(--lose);background:var(--lose-bg)}
 @media (prefers-reduced-motion: reduce){.slide{transition:none}#detail,#dcard{transition:none}}
 /* pantallas táctiles: blancos de toque grandes */
 @media (pointer:coarse){
@@ -373,18 +401,20 @@ function parseWorkbook(wb){
     const meta=num(g('B5'));
     const lag=g('B2')||'';
     const acum=g('E10')!=null && String(g('E10')).trim()!=='' ;
-    // leads: names in row 8 starting col I (merged pairs), metas row 9, data Real/% pairs
+    // leads: names in row 8 starting col I (merged pairs), metas row 9, data Real/% pairs.
+    // Captura por lead: fila 5 = equipo, fila 6 = responsable, fila 7 = fuente / método.
     const leadDefs=[];
     for(let k=0;k<8;k++){
       const c=XLSX.utils.encode_col(8+2*k);
       const nm=g(c+'8');
       if(nm==null||String(nm).trim()===''||String(nm).includes('(Disponible)'))continue;
       leadDefs.push({k, name:String(nm).replace(/^L\d+\.\s*/,''), meta:num(g(c+'9')),
-        fmt:fmtFromCell(s[c+'9']), col:c, pcol:XLSX.utils.encode_col(9+2*k)});
+        fmt:fmtFromCell(s[c+'9']), col:c, pcol:XLSX.utils.encode_col(9+2*k),
+        equipo:g(c+'5')||'', resp:g(c+'6')||'', fuente:g(c+'7')||''});
     }
-    const rows=[];
+    const rows=[]; let dataEnd=11;
     for(let r=11;r<400;r++){
-      const f=g('B'+r); if(f==null) break;
+      const f=g('B'+r); if(f==null){dataEnd=r;break;}
       rows.push({label:fmtDate(typeof f==='number'?xlDate(f):new Date(f)),
         meta:num(g('C'+r)), real:num(g('D'+r)),
         metaA:num(g('E'+r)), realA:num(g('F'+r)),
@@ -392,9 +422,28 @@ function parseWorkbook(wb){
         lv:leadDefs.map(ld=>num(g(ld.pcol+r))),
         lr:leadDefs.map(ld=>num(g(ld.col+r)))});
     }
+    // Temas puntuales (metas binarias con fecha): bloque bajo la tabla; se localiza
+    // por el rótulo 'Temas puntuales' (o legado 'Hitos') en la col A.
+    // Cols: A Tema · E Lead · F Resp · G Fecha · H Estado.
+    const hitos=[];
+    for(let hr=dataEnd; hr<dataEnd+6 && hr<400; hr++){
+      const a=g('A'+hr);
+      if(a!=null && /^(temas?\s+puntual|hitos)/i.test(String(a).trim())){
+        for(let rr=hr+2; rr<hr+2+30; rr++){
+          const t=g('A'+rr); if(t==null||String(t).trim()==='') break;
+          const fc=g('G'+rr), est=String(g('H'+rr)||'').trim();
+          hitos.push({text:String(t), lead:num(g('E'+rr)), resp:String(g('F'+rr)||''),
+            fecha: fc!=null ? (typeof fc==='number'?fmtDate(xlDate(fc)):String(fc)) : '',
+            fechaSort: typeof fc==='number'?fc:9e9,
+            estado:est, done:/lograd|hech|done|complet|listo/i.test(est)});
+        }
+        break;
+      }
+    }
     const wigNum=parseInt((String(name).match(/^(\d+)/)||[])[1],10)||(pos+1);
     out.push({company:false, title, lag, duenio:g('B4')||'—', equipo:g('E4')||'',
       meta, acum, fmt:fmtFromCell(s['B5']), lowerBetter:LOWER_BETTER(name+title),
+      responsable:g('B6')||'', fuente:g('B7')||'', hitos,
       rows, leads:leadDefs, wigNum, tasks:{}, initiatives:{}});
   });
   const tasks=parseCompromisos(wb);
@@ -657,6 +706,49 @@ function yearSlideHTML(w){
     <div class="leads cols4 trajstrip">${tiles}</div>`;
 }
 
+/* sección "Temas puntuales" de un WIG: sus metas binarias con fecha (logro sí/no),
+   ordenadas por estado (pendiente → en curso → logrado) y fecha. Tira compacta
+   bajo los leads del slide del WIG. Vacía si el WIG no tiene temas. */
+function temasHTML(w){
+  if(!w.hitos||!w.hitos.length) return '';
+  const sc=h=>h.done?'win':(/curso|progres|marcha/i.test(h.estado)?'risk':'');
+  const ic=h=>h.done?'✓':(/curso|progres|marcha/i.test(h.estado)?'◷':'○');
+  const ord=h=>h.done?2:(/curso|progres|marcha/i.test(h.estado)?1:0);
+  const items=[...w.hitos].sort((a,b)=>(ord(a)-ord(b))||((a.fechaSort||9e9)-(b.fechaSort||9e9)));
+  const done=w.hitos.filter(h=>h.done).length;
+  const chips=items.map(h=>`
+    <div class="temachip ${sc(h)}">
+      <span class="ticon ${sc(h)}">${ic(h)}</span>
+      <span class="ttext">${esc(h.text)}${h.fecha?` · <b>${esc(h.fecha)}</b>`:''}</span>
+    </div>`).join('');
+  return `<div class="temas">
+    <div class="temascap cond">Temas puntuales <span class="cnt">${done}/${w.hitos.length} logrados · meta binaria sí/no</span></div>
+    <div class="temarow">${chips}</div>
+  </div>`;
+}
+
+/* tira de estado por WIG en el slide de compañía ($1M NAT): un chip por WIG con
+   el semáforo de "¿vamos en meta?" (verde/amarillo/rojo/gris) — táctil, lleva a
+   ese WIG. data-go guarda el índice del slide del WIG en el arreglo. */
+function wigStatusHTML(wigs){
+  const items=wigs.map((x,idx)=>({x,idx})).filter(o=>!o.x.company&&!o.x.yearPage);
+  if(!items.length) return '';
+  // estado como color + símbolo (sin texto): ✓ en meta · ! riesgo · ✕ atrasado · · sin datos
+  const sym={win:'✓',risk:'!',lose:'✕',none:'·'};
+  const chips=items.map(({x,idx},i)=>{
+    const v=verdictOf(x), cls=v.cls||'none';
+    return `<button class="wschip ${cls}" data-go="${idx}" aria-label="${esc(x.title)} — ${esc(v.txt)}" title="${esc(v.txt)}">
+      <span class="wsdot ${cls}">${sym[cls]||'·'}</span>
+      <span class="wsn">${x.wigNum||(i+1)}</span>
+      <span class="wsname">${esc(x.title||'')}</span>
+    </button>`;
+  }).join('');
+  return `<div class="wigstatus">
+    <div class="wscap cond">¿Vamos en meta por WIG? <span class="cnt">toca un WIG para abrirlo</span></div>
+    <div class="wsrow">${chips}</div>
+  </div>`;
+}
+
 function buildSlides(wigs){
   const stage=$('#stage'); stage.innerHTML=''; $('#dots').innerHTML='';
   const wigList=wigs.filter(x=>!x.company&&!x.yearPage);   // numeración de WIGs (excluye compañía y años)
@@ -713,12 +805,20 @@ function buildSlides(wigs){
       : `<div class="lbl">Marcador · meta vs real <span class="legend"><span><i class="meta"></i>Meta</span><span><i></i>Real</span></span></div>`;
     const t=trendOf(w);
     const trendHtml=t?`<div class="trend ${t.cls}">${t.arrow} ${t.txt}</div>`:'';
+    // cabecera: responsable (quién captura el lag, B6) + equipo (E4). El "Dueño"
+    // se omite si quedó sin asignar (evita el «Por asignar» sin información).
+    const hasOwner=w.duenio&&!/^\s*por\s+asignar\s*$/i.test(String(w.duenio));
+    const headParts=[];
+    if(hasOwner)        headParts.push(`Dueño: <b>${esc(w.duenio)}</b>`);
+    if(w.responsable)   headParts.push(`Responsable: <b>${esc(w.responsable)}</b>`);
+    if(w.equipo)        headParts.push(`Equipo: <b>${esc(w.equipo)}</b>`);
+    const metaLine=`${headParts.join(' · ')}${w.lag?(headParts.length?'<br>':'')+esc(w.lag):''}`;
     el.innerHTML=`
       <div class="head">
         <div>
           <div class="eyebrow cond">${eyebrow}</div>
           <div class="wigtitle cond">${esc(w.title)}</div>
-          <div class="meta-line">Dueño: <b>${esc(w.duenio)}</b> · Equipo: <b>${esc(w.equipo)}</b><br>${esc(w.lag)}</div>
+          <div class="meta-line">${metaLine}</div>
         </div>
         <div class="verdict">
           <div class="chip ${v.cls} cond">${v.txt}</div>
@@ -733,8 +833,14 @@ function buildSlides(wigs){
         </div>
         <div class="chartwrap">${chartHead}<canvas></canvas></div>
       </div>
-      ${leadsHtml}`;
+      ${leadsHtml}
+      ${w.company?wigStatusHTML(wigs):temasHTML(w)}`;
     stage.appendChild(el);
+    if(w.company){
+      el.querySelectorAll('.wschip').forEach(btn=>btn.addEventListener('click',e=>{
+        e.stopPropagation(); go(+btn.dataset.go); resetIdle();
+      }));
+    }
     if(multiYear){
       el.querySelectorAll('.yrchip').forEach(btn=>btn.addEventListener('click',e=>{
         e.stopPropagation();
@@ -804,6 +910,29 @@ function openDetail(w,k){
   // racha: semanas en meta de las últimas N con dato
   let hits=0,tot=0;
   for(let i=Math.max(0,li-11);i<=li;i++){const v=w.rows[i]&&w.rows[i].lv[k];if(v!=null){tot++;if(v>=1)hits++;}}
+  // captura del dato (equipo · responsable · fuente) — por lead, con respaldo al del lag
+  const capEq=(ld.equipo||w.equipo||'').trim();
+  const capResp=(ld.resp||w.responsable||'').trim();
+  const capFte=(ld.fuente||w.fuente||'').trim();
+  const capHtml=(capEq||capResp||capFte)
+    ? `<div class="dsec"><div class="lbl">¿Quién captura este dato?</div>
+        <div class="capgrid">
+          ${capEq?`<div><span class="caplbl">Equipo</span><b>${esc(capEq)}</b></div>`:''}
+          ${capResp?`<div><span class="caplbl">Responsable</span><b>${esc(capResp)}</b></div>`:''}
+          ${capFte?`<div><span class="caplbl">Fuente / método</span><b>${esc(capFte)}</b></div>`:''}
+        </div></div>` : '';
+  // hitos (metas binarias con fecha) de este lead
+  const hitos=(w.hitos||[]).filter(h=>h.lead===k+1);
+  const hitDone=hitos.filter(h=>h.done).length;
+  const hitCls=h=>h.done?'win':/curso|progres|marcha/i.test(h.estado)?'risk':'';
+  const hitosHtml=hitos.length
+    ? `<div class="dsec"><div class="lbl">Temas puntuales <span class="cnt">${hitDone+' de '+hitos.length+' logrados'}</span></div>
+        <div class="tasks">${hitos.map(h=>`
+        <div class="task${h.done?' done':''}">
+          <div class="mark">${h.done?'✓':'◷'}</div>
+          <div class="txt">${esc(h.text)}${h.fecha?` <span class="cnt">· meta ${esc(h.fecha)}</span>`:''}</div>
+          <div class="meta"><b>${esc(h.resp)}</b>${h.resp&&h.estado?'<br>':''}<span class="badge ${hitCls(h)}">${esc(h.estado||'')}</span></div>
+        </div>`).join('')}</div></div>` : '';
   const tasks=(w.tasks&&w.tasks[k]?[...w.tasks[k]]:[]).sort((a,b)=>b.ord-a.ord);
   const done=tasks.filter(t=>t.done).length;
   const tasksHtml=tasks.length
@@ -851,6 +980,8 @@ function openDetail(w,k){
         <div class="lbl">Historia del indicador <span class="cnt">% vs meta por periodo · línea = 100%</span></div>
         <div class="dchart">${detailBarsChart(w,k)}</div>
       </div>
+      ${capHtml}
+      ${hitosHtml}
       <div class="dsec">
         <div class="lbl">Tareas de soporte <span class="cnt">${inits.length?initDone+' de '+inits.length+' hechas':''}</span></div>
         ${initsHtml}

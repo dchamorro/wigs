@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 dist/trmnl/
 .DS_Store
+dist/prod_preview/
+.gstack/
