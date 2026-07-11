@@ -15,9 +15,13 @@ demo: build
 test:
 	$(PY) tests/test_contract.py
 	$(PY) tests/test_trmnl.py
+	$(PY) tests/test_trmnl_airtable.py
 
 trmnl:
 	$(PY) scripts/trmnl_render.py --input $(INPUT) --out dist/trmnl $(if $(PNG),--png,)
+
+trmnl-company:	# tarjeta de compañía desde Airtable (env AIRTABLE_PAT)
+	$(PY) scripts/trmnl_render.py --source airtable --kind company --out dist/trmnl --png
 
 pdf:
 	$(PY) scripts/build_overview_pdf.py dist/Marcador_WIG_4DX_Overview.pdf
@@ -43,4 +47,4 @@ publicar:
 		|| git commit -m "data: tablero semanal $$(date +%Y-%m-%d)" -- web/tablero.xlsx
 	git push
 
-.PHONY: build demo test trmnl pdf migrate deploy publicar
+.PHONY: build demo test trmnl trmnl-company pdf migrate deploy publicar

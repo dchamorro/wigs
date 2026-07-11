@@ -160,6 +160,31 @@ Cambios **estructurales** (agregar/quitar WIGs, leads, columnas, fórmulas):
 5. Revisar la migración, publicar el archivo migrado en `\\PGX\WIG`
    reemplazando el anterior (avisar a los dueños que cierren el archivo).
 
+## TRMNL (v1: tarjeta de compañía)
+
+E-ink de escritorio (800×480, 1-bit). v1 = solo la tarjeta «WIG de Compañía»,
+desde **Airtable** (rebanada fina de la arquitectura web; el resto sigue en
+Excel). Runbook completo: `docs/TRMNL.md`.
+
+- `scripts/trmnl_render.py` — renderer puro (4 tarjetas, SVG/PNG). Fuentes:
+  `--source json` (fixture) o `--source airtable` (v1: solo `--kind company`).
+- `scripts/trmnl_airtable.py` — adaptador (solo stdlib): base `WIGS`
+  (`appZ8gj9HvUsOBuvP`), tablas `Years` + `Backlog Readings` → bundle
+  `{week, company}` con la misma forma que `scripts/trmnl_sample.json`.
+  **Los nombres de campo deben seguir el esquema de Airtable**; los IDs de
+  tabla son constantes en el módulo. Semana = posición del lunes actual en el
+  grid de Backlog Readings (fallback: fórmula desde `WEEK1_MONDAY`, espejo de
+  `BACKLOG_START` en build_wig.py).
+- `scripts/seed_backlog.py` — siembra idempotente del grid semanal en Airtable
+  desde las páginas por año del tablero (`--dry-run` disponible).
+- `.github/workflows/trmnl-company.yml` — cron (lunes por hora + diario) →
+  render + PNG 1-bit → Cloudflare Pages bajo ruta secreta con `no-store`.
+  Secrets: `AIRTABLE_PAT` (solo lectura), `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID`, `WIG_TRMNL_SECRET_PATH`. Repo público: nada
+  sensible fuera de secrets, no subir el PNG como artifact.
+- Tests sin red: `tests/test_trmnl_airtable.py` (fixture
+  `tests/fixtures/airtable_company.json`).
+
 ## Comandos
 
 ```
@@ -168,6 +193,7 @@ make demo       # tablero con datos dummy + dist/demo.html para ver el marcador
 make test       # pruebas de contrato
 make migrate OLD=ruta.xlsx   # migra datos al tablero recién construido
 make deploy PGX=usuario@ip   # copia marcador.html al PGX vía scp
+make trmnl-company           # tarjeta TRMNL de compañía desde Airtable (AIRTABLE_PAT)
 ```
 
 ## Decisiones tomadas (no rediscutir sin razón)

@@ -11,7 +11,13 @@ make build                      # construye el tablero
 make demo && open dist/demo.html  # ver el marcador con datos dummy
 make test                       # validar el contrato
 make pdf                         # PDF de resumen del proyecto (stack + próximos pasos)
+make trmnl-company              # tarjeta TRMNL de compañía desde Airtable (AIRTABLE_PAT)
 ```
+
+## TRMNL (e-ink de escritorio)
+
+La tarjeta «WIG de Compañía» se publica sola: Airtable → GitHub Actions →
+Cloudflare Pages → dispositivo TRMNL. Setup y operación: `docs/TRMNL.md`.
 
 ## Producción
 1. `deploy/setup-wig.sh` en el PGX (Samba + nginx + timer).
