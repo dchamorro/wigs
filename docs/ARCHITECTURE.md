@@ -131,12 +131,20 @@ Un solo vendor para el front (Cloudflare), gratis/barato, sin Azure, sin Entra.
 
 ## Rollout por fases
 
+0. **✅ Rebanada fina (jul 2026): tarjeta de compañía en TRMNL, end-to-end.**
+   Years + Backlog Readings digitados en el grid de Airtable → GitHub Actions
+   (cron) renderiza el PNG (`trmnl_airtable.py` + `trmnl_render.py`) →
+   Cloudflare Pages (ruta secreta, `no-store`) → private plugin (Static) en
+   1–2 escritorios exec. Sin formularios, sin Captura semanal, sin Worker
+   todavía: la ruta secreta es el token v1. Runbook: `docs/TRMNL.md`.
 1. **Empleados + propiedad:** llenar la lista maestra; asignar `Leads.Responsable` /
    `WIGs.Dueño` del equipo real.
 2. **Captura semanal (ancha) + formulario Cloudflare + automatización 08:00** — probar el
    ciclo con un WIG.
 3. **`build_wig.from_airtable`** — Excel pasa a derivado; el TV se alimenta de Airtable.
-4. **`trmnl_render.from_airtable`** — *bundles* en vivo; piloto de 2–3 escritorios.
+4. **`trmnl_render.from_airtable` por persona** — *bundles* en vivo de las 4 tarjetas;
+   piloto de 2–3 escritorios; el Worker `/trmnl` (token por dispositivo) reemplaza la
+   ruta secreta de la fase 0. Extender el grid de Backlog Readings a 2027.
 5. **Cloudflare Pages + IP allowlist** — publicar el TV detrás de la regla de IP.
 
 ## Descartado (para el registro)

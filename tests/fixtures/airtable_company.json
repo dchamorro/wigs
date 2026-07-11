@@ -1,0 +1,15 @@
+{
+  "comment": "Respuesta enlatada del API de Airtable (records con fields por nombre), misma forma que devuelve api.airtable.com. Years en desorden a propósito (el bundle debe ordenar).",
+  "Years": [
+    {"id": "recY2029", "fields": {"Año": "2029", "Etiqueta": "2029 (meta)", "Ingreso": 30571000, "GP %": 0.165, "Meta NAT": 2445680, "Tiene página": true, "GP% supuesto": true}},
+    {"id": "recY2027", "fields": {"Año": "2027", "Etiqueta": "2027 (meta)", "Ingreso": 21000000, "GP %": 0.16, "Meta NAT": 1000000, "Tiene página": true}},
+    {"id": "recY2026", "fields": {"Año": "2026", "Etiqueta": "2026 (estimado)", "Ingreso": 18656000, "GP %": 0.144, "Meta NAT": 375000, "Año base": true}},
+    {"id": "recY2028", "fields": {"Año": "2028", "Etiqueta": "2028 (meta)", "Ingreso": 28571000, "GP %": 0.164, "Meta NAT": 2000000, "Tiene página": true}}
+  ],
+  "Backlog Readings": [
+    {"id": "recB01", "fields": {"Etiqueta": "2027 · sem 01 · 15-jun", "Fecha": "2026-06-15", "GP comprometido": 1150000, "Año": ["recY2027"]}},
+    {"id": "recB02", "fields": {"Etiqueta": "2027 · sem 02 · 22-jun", "Fecha": "2026-06-22", "GP comprometido": 1280000, "Año": ["recY2027"]}},
+    {"id": "recB03", "fields": {"Etiqueta": "2027 · sem 03 · 29-jun", "Fecha": "2026-06-29", "Año": ["recY2027"]}},
+    {"id": "recB04", "fields": {"Etiqueta": "2028 · sem 01 · 15-jun", "Fecha": "2026-06-15", "GP comprometido": 500000, "Año": ["recY2028"]}}
+  ]
+}
