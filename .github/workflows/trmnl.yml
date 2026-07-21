@@ -1,0 +1,29 @@
+# Publica el hero WIG a TRMNL cada vez que se publica el tablero
+# (make publicar → push a main tocando web/tablero.xlsx). docs/TRMNL.md
+name: Publicar hero a TRMNL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - web/tablero.xlsx
+  workflow_dispatch:
+
+jobs:
+  push-hero:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install openpyxl
+      - name: Push merge variables al webhook
+        env:
+          TRMNL_WEBHOOK_URL: ${{ secrets.TRMNL_WEBHOOK_URL }}
+        run: |
+          if [ -z "$TRMNL_WEBHOOK_URL" ]; then
+            echo "::warning::Secret TRMNL_WEBHOOK_URL no configurado — no se publica (ver docs/TRMNL.md)"
+            exit 0
+          fi
+          python3 scripts/trmnl_hero.py --xlsx web/tablero.xlsx --out dist/trmnl --push
