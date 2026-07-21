@@ -16,7 +16,8 @@ tarjetas que el dispositivo rota:
                render y empuja los merge variables — ver docs/TRMNL.md]
 
 Fuente de datos:
-  - from_json(path)      — fuente de trabajo y de pruebas (fixture local).
+  - from_json(path)                 — fixture local (pruebas y trabajo offline).
+  - trmnl_airtable.from_airtable()  — en vivo (v1: solo la tarjeta de compañía).
 
 Reglas de diseño e-ink (no romper): solo negro sobre blanco, sin grises; el
 semáforo es GLIFO, no color (● en meta · ◐ riesgo/ritmo · ○ atrasado);
@@ -26,6 +27,7 @@ Uso:
   python3 scripts/trmnl_render.py --input scripts/trmnl_sample.json --out dist/trmnl
   python3 scripts/trmnl_render.py --input scripts/trmnl_sample.json --kind company
   python3 scripts/trmnl_render.py --input scripts/trmnl_sample.json --out dist/trmnl --png
+  python3 scripts/trmnl_render.py --source airtable --kind company --out dist/trmnl --png
 
 `--png` rasteriza con cairosvg si está instalado (lo que consume el e-ink);
 sin cairosvg se emite solo SVG (y se avisa).
@@ -356,18 +358,39 @@ def to_png(svg, out_path):
         return False
     cairosvg.svg2png(bytestring=svg.encode("utf-8"), write_to=out_path,
                      output_width=W, output_height=H)
+    # Umbral a 1-bit puro: el antialiasing deja bordes grises que el dithering
+    # del TRMNL convierte en moteado; en B/N exacto pasa limpio (y pesa ~10 KB).
+    try:
+        from PIL import Image
+    except ImportError:
+        return True  # PNG sin cuantizar (dev local); en CI Pillow siempre está
+    img = Image.open(out_path).convert("L").point(lambda p: 255 if p >= 128 else 0)
+    img.convert("1", dither=Image.Dither.NONE).save(out_path)
     return True
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Renderiza las tarjetas TRMNL por persona.")
-    ap.add_argument("--input", required=True, help="fixture JSON con el bundle de la persona")
+    ap.add_argument("--source", choices=["json", "airtable"], default="json",
+                    help="origen del bundle (airtable requiere env AIRTABLE_PAT)")
+    ap.add_argument("--input", help="fixture JSON con el bundle (con --source json)")
     ap.add_argument("--kind", choices=KINDS + ["all"], default="all")
     ap.add_argument("--out", default="dist/trmnl", help="carpeta de salida")
     ap.add_argument("--png", action="store_true", help="rasterizar a PNG con cairosvg si está")
     args = ap.parse_args(argv)
 
-    bundle = from_json(args.input)
+    if args.source == "airtable":
+        if args.kind != "company":
+            ap.error("--source airtable: v1 solo genera la tarjeta de compañía (--kind company)")
+        try:
+            import trmnl_airtable
+        except ImportError:
+            from scripts import trmnl_airtable
+        bundle = trmnl_airtable.from_airtable()
+    else:
+        if not args.input:
+            ap.error("--input es obligatorio con --source json")
+        bundle = from_json(args.input)
     tid = bundle.get("person", {}).get("trmnl_id", "card")
     kinds = KINDS if args.kind == "all" else [args.kind]
     os.makedirs(args.out, exist_ok=True)

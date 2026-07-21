@@ -70,6 +70,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 #dots{display:flex;gap:.5vw}
 .dot{width:1vh;height:1vh;border-radius:50%;background:var(--line);transition:all .3s}
 .dot.on{background:var(--gold);transform:scale(1.3)}
+#slidecount{font-family:'Saira Condensed';font-weight:700;font-size:2vh;letter-spacing:.06em;color:var(--dim);min-width:4.5ch;text-align:center;font-variant-numeric:tabular-nums}
 #paused{display:none;font-size:1.5vh;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:.2vh .6vw;letter-spacing:.08em}
 
 /* slides */
@@ -93,8 +94,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .yrchips{display:inline-flex;gap:.6vh;margin-left:1vh;vertical-align:middle}
 .yrchip{font-family:'Saira Condensed';font-weight:700;font-size:1.7vh;letter-spacing:.06em;padding:.2vh 1.2vh;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer}
 .yrchip.on{background:var(--gold);border-color:var(--gold);color:#1a1408}
-.yrmetric{font-size:1.7vh;color:var(--faint);margin-top:.2vh}
+.yrmetric{font-family:'Saira Condensed';font-weight:700;font-size:2.1vh;letter-spacing:.04em;color:var(--dim);margin-top:.3vh}
 .verdict{margin-left:auto;text-align:right;flex:none}
+.verdict .trend{margin-top:.7vh;font-family:'Saira Condensed';font-weight:700;font-size:2vh;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.trend.up{color:var(--win)}
+.trend.down{color:var(--lose)}
+.trend.flat{color:var(--dim)}
 .verdict .chip{display:inline-block;font-family:'Saira Condensed';font-weight:800;font-size:3.6vh;letter-spacing:.1em;padding:.6vh 1.4vw;border-radius:.8vh;text-transform:uppercase}
 .chip.win{color:var(--win);background:var(--win-bg);border:1px solid var(--win)}
 .chip.risk{color:var(--risk);background:var(--risk-bg);border:1px solid var(--risk)}
@@ -247,6 +252,7 @@ canvas{flex:1;width:100%;min-height:0}
     <div class="right">
       <div id="paused">PAUSADO</div>
       <div id="dots"></div>
+      <div id="slidecount"></div>
       <div id="weekinfo"></div>
       <div id="clock"></div>
     </div>
@@ -491,17 +497,51 @@ function parseCompromisos(wb){
 
 function lastDataIndex(rows){ for(let i=rows.length-1;i>=0;i--) if(rows[i].real!=null) return i; return -1; }
 
+/* estado calculado por el Excel (col H / col G del Dashboard) → clase del semáforo */
+function statusCls(t){
+  if(t==null) return null; const s=String(t);
+  if(/en\s*meta/i.test(s)) return 'win';
+  if(/riesgo/i.test(s)) return 'risk';
+  if(/atrasad/i.test(s)) return 'lose';
+  return null;
+}
+
 function verdictOf(w){
   const li=lastDataIndex(w.rows);
   if(li<0) return {cls:'none',txt:'SIN DATOS',pct:null,li};
   const r=w.rows[li];
+  // preferir el estado ya calculado en el Excel: una sola fuente de umbrales
+  // (incluye la tolerancia `riesgo` por WIG que el parser no conoce);
+  // si falta (tablero viejo / sin recalc), recalcular aquí como respaldo
+  const excel=statusCls(r.estado);
   let ok;
   if(w.acum){ const p=r.metaA?r.realA/r.metaA:null;
-    ok = p==null?null : p>=.95?'win':p>=.8?'risk':'lose';
+    ok = excel || (p==null?null : p>=.95?'win':p>=.8?'risk':'lose');
     return {cls:ok||'none',txt:ok==='win'?'VAMOS GANANDO':ok==='risk'?'EN RIESGO':'ATRASADOS',pct:p,li};}
-  if(w.lowerBetter){ ok = r.real<=r.meta?'win':r.real<=r.meta+1?'risk':'lose'; }
+  if(excel){ ok=excel; }
+  else if(w.lowerBetter){ ok = r.real<=r.meta?'win':r.real<=r.meta+1?'risk':'lose'; }
   else { const tol=(w.meta||1)*.05; ok = r.real>=r.meta?'win':r.real>=r.meta-tol?'risk':'lose'; }
   return {cls:ok,txt:ok==='win'?'VAMOS GANANDO':ok==='risk'?'EN RIESGO':'ATRASADOS',pct:null,li};
+}
+
+/* tendencia vs el periodo anterior (▲/▼): en 4DX importa "¿nos movemos?" */
+function trendOf(w){
+  const li=lastDataIndex(w.rows); if(li<1) return null;
+  let pi=-1; for(let i=li-1;i>=0;i--) if(w.rows[i].real!=null){pi=i;break;}
+  if(pi<0) return null;
+  const a=w.rows[pi], b=w.rows[li];
+  let d, txt;
+  if(w.acum){
+    const pa=a.metaA?a.realA/a.metaA:null, pb=b.metaA?b.realA/b.metaA:null;
+    if(pa==null||pb==null) return null;
+    d=pb-pa; txt=Math.abs(d*100).toFixed(0)+' pts';
+  } else {
+    if(a.real==null||b.real==null) return null;
+    d=b.real-a.real; txt=w.fmt(Math.abs(d));
+  }
+  if(Math.abs(d)<1e-9) return {arrow:'—',cls:'flat',txt:'sin cambio vs periodo anterior'};
+  const up=d>0, good=w.lowerBetter?!up:up;
+  return {arrow:up?'▲':'▼',cls:good?'up':'down',txt:txt+' vs periodo anterior'};
 }
 
 function drawChart(cv,w){
@@ -522,7 +562,7 @@ function drawChart(cv,w){
     fwin:cssv('--fill-win'),flose:cssv('--fill-lose')};
   // gridlines
   ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.fillStyle=C.faint;
-  ctx.font=(12*devicePixelRatio*.85)+'px Inter';
+  ctx.font=(14*devicePixelRatio*.9)+'px Inter';   // legible desde el sofá/TV
   for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4, y=Y(v);
     ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(W-P.r,y);ctx.stroke();
     ctx.fillText(w.fmt(v),6,y+4);}
@@ -560,8 +600,11 @@ function drawChart(cv,w){
   }
 }
 
-function colorFor(p){return p==null?'var(--faint)':p>=1?'var(--win)':p>=.8?'var(--risk)':'var(--lose)'}
-function clsFor(p){return p==null?'none':p>=1?'win':p>=.8?'risk':'lose'}
+/* mismo semáforo que los WIGs y el Excel: En meta ≥95% · Riesgo 80–95% · Atrasado <80% */
+function colorFor(p){return p==null?'var(--faint)':p>=.95?'var(--win)':p>=.8?'var(--risk)':'var(--lose)'}
+function clsFor(p){return p==null?'none':p>=.95?'win':p>=.8?'risk':'lose'}
+/* glifos de estado (mismos que las tarjetas TRMNL): legibles sin color */
+function glyphFor(p){return p==null?'':p>=.95?'●':p>=.8?'◐':'○'}
 function lastVals(w,k,n){
   const li=lastDataIndex(w.rows); const out=[];
   if(li<0) return out;
@@ -576,7 +619,7 @@ function vizBars(w,k,cur){
     const h=Math.max(10,Math.min(100,v*100));
     return `<b style="height:${h}%;background:${colorFor(v)}"></b>`;
   }).join('');
-  return `<div class="bars">${bars}</div><div class="pct ${clsFor(cur)}">${cur!=null?fmtPct(cur):'—'}</div>`;
+  return `<div class="bars">${bars}</div><div class="pct ${clsFor(cur)}">${cur!=null?glyphFor(cur)+' '+fmtPct(cur):'—'}</div>`;
 }
 /* viz 2: radial gauge */
 function vizGauge(w,k,cur){
@@ -586,7 +629,7 @@ function vizGauge(w,k,cur){
     <circle cx="32" cy="32" r="26" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round"
       stroke-dasharray="${(C*p).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 32 32)"/>
     <text x="32" y="38" text-anchor="middle" fill="var(--ink)" font-size="17" font-weight="800">${cur!=null?Math.round(cur*100)+'%':'—'}</text>
-  </svg><div class="gsub">de la meta<br>esta semana</div>`;
+  </svg><div class="gsub">${glyphFor(cur)} de la meta<br>esta semana</div>`;
 }
 /* viz 3: trend sparkline with meta line */
 function vizSpark(w,k,cur){
@@ -603,13 +646,13 @@ function vizSpark(w,k,cur){
   for(let i=vals.length-1;i>=0;i--) if(vals[i]!=null){dot=`<circle cx="${X(i).toFixed(1)}" cy="${Y(vals[i]).toFixed(1)}" r="3.5" fill="${c}"/>`;break;}
   return `<svg class="spark" viewBox="0 0 100 46" preserveAspectRatio="none">
     <line x1="0" y1="${my}" x2="100" y2="${my}" stroke="var(--faint)" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
-    ${lines}${dot}</svg><div class="pct ${clsFor(cur)}">${cur!=null?fmtPct(cur):'—'}</div>`;
+    ${lines}${dot}</svg><div class="pct ${clsFor(cur)}">${cur!=null?glyphFor(cur)+' '+fmtPct(cur):'—'}</div>`;
 }
 /* viz 4: bullet bar vs target tick */
 function vizBullet(w,k,cur){
   const width=cur==null?0:Math.min(cur,1.25)/1.25*100;
   return `<div class="btrack"><div class="bfill" style="width:${width.toFixed(1)}%;background:${colorFor(cur)}"></div><div class="btick"></div></div>
-    <div class="pct ${clsFor(cur)}">${cur!=null?fmtPct(cur):'—'}</div>`;
+    <div class="pct ${clsFor(cur)}">${cur!=null?glyphFor(cur)+' '+fmtPct(cur):'—'}</div>`;
 }
 /* viz 5: big % with delta vs previous period */
 function vizBig(w,k,cur){
@@ -621,7 +664,7 @@ function vizBig(w,k,cur){
     const dc=d>0.005?'var(--win)':d<-0.005?'var(--lose)':'var(--dim)';
     delta=`<b style="color:${dc}">${arrow} ${Math.abs(d*100).toFixed(0)} pts</b><br>vs periodo anterior`;
   }
-  return `<div class="bignumlead"><div class="pct-big ${clsFor(cur)} pct">${cur!=null?fmtPct(cur):'—'}</div><div class="delta">${delta}</div></div>`;
+  return `<div class="bignumlead"><div class="pct-big ${clsFor(cur)} pct">${cur!=null?glyphFor(cur)+' '+fmtPct(cur):'—'}</div><div class="delta">${delta}</div></div>`;
 }
 const VIZ=[vizBars,vizBullet,vizBig,vizSpark,vizGauge];
 function vizFor(k){ if(k===0)return vizGauge; if(k===1)return vizSpark; return VIZ[(k-2)%VIZ.length]; }
@@ -758,8 +801,10 @@ function buildSlides(wigs){
     // gráfico multi-anual en el slide de compañía: chips por año (2027/2028/2029)
     const multiYear=w.company&&w.years&&w.years.length>1;
     const chartHead=multiYear
-      ? `<div class="lbl">Cómo vamos por año<span class="yrchips">${w.years.map((y,j)=>`<button class="yrchip${j===(w._sel||0)?' on':''}" data-yr="${j}">${esc(y.year)}</button>`).join('')}</span></div><div class="yrmetric">${esc(w.years[w._sel||0].metric)}</div>`
+      ? `<div class="lbl">Cómo vamos por año<span class="yrchips">${w.years.map((y,j)=>`<button class="yrchip${j===(w._sel||0)?' on':''}" data-yr="${j}">${esc(y.year)}</button>`).join('')}</span></div><div class="yrmetric">${esc(w.years[w._sel||0].year)} · ${esc(w.years[w._sel||0].metric)}</div>`
       : `<div class="lbl">Marcador · meta vs real <span class="legend"><span><i class="meta"></i>Meta</span><span><i></i>Real</span></span></div>`;
+    const t=trendOf(w);
+    const trendHtml=t?`<div class="trend ${t.cls}">${t.arrow} ${t.txt}</div>`:'';
     // cabecera: responsable (quién captura el lag, B6) + equipo (E4). El "Dueño"
     // se omite si quedó sin asignar (evita el «Por asignar» sin información).
     const hasOwner=w.duenio&&!/^\s*por\s+asignar\s*$/i.test(String(w.duenio));
@@ -777,6 +822,7 @@ function buildSlides(wigs){
         </div>
         <div class="verdict">
           <div class="chip ${v.cls} cond">${v.txt}</div>
+          ${trendHtml}
           <div class="asof">${r?('Último dato: '+w.rows[li].label):'Pendiente primer ingreso de datos'}</div>
         </div>
       </div>
@@ -800,7 +846,7 @@ function buildSlides(wigs){
         e.stopPropagation();
         w._sel=+btn.dataset.yr;
         el.querySelectorAll('.yrchip').forEach(b=>b.classList.toggle('on',b===btn));
-        const mc=el.querySelector('.yrmetric'); if(mc)mc.textContent=w.years[w._sel].metric;
+        const mc=el.querySelector('.yrmetric'); if(mc)mc.textContent=w.years[w._sel].year+' · '+w.years[w._sel].metric;
         const cv=el.querySelector('canvas'); if(cv)drawChart(cv,chartTarget(w));
         resetIdle();
       }));
@@ -817,6 +863,7 @@ function go(i,instant){
   idx=(i+slides.length)%slides.length;
   slides.forEach((s,k)=>s.el.classList.toggle('show',k===idx));
   document.querySelectorAll('.dot').forEach((d,k)=>d.classList.toggle('on',k===idx));
+  $('#slidecount').textContent=(idx+1)+' / '+slides.length;
   requestAnimationFrame(()=>{const cv=slides[idx].el.querySelector('canvas'); if(cv)drawChart(cv,chartTarget(slides[idx].w));});
   restartTimer();
 }
@@ -918,7 +965,7 @@ function openDetail(w,k){
     <div class="dbody">
       <div class="dstats">
         <div class="dstat"><div class="lbl">Esta semana</div>
-          <div class="val pct ${clsFor(cur)}">${cur!=null?fmtPct(cur):'—'}</div>
+          <div class="val pct ${clsFor(cur)}">${cur!=null?glyphFor(cur)+' '+fmtPct(cur):'—'}</div>
           <div class="sub">de la meta del lead</div></div>
         <div class="dstat"><div class="lbl">Real vs meta</div>
           <div class="val">${curReal!=null?fmt(curReal):'—'}</div>

@@ -1,0 +1,77 @@
+# Tarjeta TRMNL de compañía: render desde Airtable → Cloudflare Pages.
+# El dispositivo TRMNL la jala de https://wig-trmnl.pages.dev/<SECRET>/company.png
+# (ruta secreta = token v1; ver docs/TRMNL.md).
+#
+# OJO repo público: los logs de Actions son públicos. Todo lo sensible
+# (PAT, token de Cloudflare, ruta secreta) vive en Actions Secrets (GitHub
+# los enmascara). Nunca subir el PNG como artifact ni imprimir la URL.
+name: TRMNL — tarjeta de compañía
+
+on:
+  schedule:
+    - cron: '5 13-23 * * 1'   # lunes 07:05–17:05 Managua (UTC-6), cada hora
+    - cron: '5 13 * * 2-5'    # mar–vie 07:05 Managua (frescura del pie)
+  workflow_dispatch:
+
+concurrency:
+  group: trmnl-company
+  cancel-in-progress: true
+
+jobs:
+  render-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Helvetica no existe en el runner; Liberation Sans tiene métricas
+      # compatibles con Arial/Helvetica (las etiquetas llegan hasta x≈793).
+      - name: Fuentes
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-liberation
+
+      - name: Dependencias
+        run: pip install --quiet cairosvg pillow
+
+      - name: Render desde Airtable
+        env:
+          AIRTABLE_PAT: ${{ secrets.AIRTABLE_PAT }}
+        run: python3 scripts/trmnl_render.py --source airtable --kind company --out dist/trmnl --png
+
+      - name: Verificar PNG (800×480, 1-bit, <100 KB)
+        run: |
+          python3 - <<'EOF'
+          import os
+          from PIL import Image
+          p = "dist/trmnl/card_company.png"
+          im = Image.open(p)
+          assert im.size == (800, 480), im.size
+          assert im.mode == "1", im.mode
+          assert os.path.getsize(p) < 100_000, os.path.getsize(p)
+          print("PNG OK:", im.size, im.mode, os.path.getsize(p), "bytes")
+          EOF
+
+      - name: Armar sitio (ruta secreta + no-store)
+        env:
+          SECRET_PATH: ${{ secrets.WIG_TRMNL_SECRET_PATH }}
+        run: |
+          test -n "$SECRET_PATH" || { echo "::error::Falta el secret WIG_TRMNL_SECRET_PATH"; exit 1; }
+          mkdir -p "_site/$SECRET_PATH"
+          cp dist/trmnl/card_company.png "_site/$SECRET_PATH/company.png"
+          printf '/*\n  Cache-Control: no-store\n  X-Robots-Tag: noindex\n' > _site/_headers
+
+      - name: Deploy a Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 pages deploy _site --project-name=wig-trmnl --branch=main --commit-dirty=true > /dev/null
+
+      - name: Smoke test (sin imprimir la URL)
+        env:
+          SECRET_PATH: ${{ secrets.WIG_TRMNL_SECRET_PATH }}
+        run: |
+          sleep 10
+          curl -fsS -o /dev/null -w 'HTTP %{http_code} · %{size_download} bytes\n' \
+            "https://wig-trmnl.pages.dev/$SECRET_PATH/company.png"

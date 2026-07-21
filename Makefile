@@ -15,6 +15,7 @@ demo: build
 test:
 	$(PY) tests/test_contract.py
 	$(PY) tests/test_trmnl.py
+	$(PY) tests/test_trmnl_airtable.py
 
 trmnl:
 	$(PY) scripts/trmnl_render.py --input $(INPUT) --out dist/trmnl $(if $(PNG),--png,)
@@ -23,6 +24,9 @@ trmnl:
 # webhook de TRMNL (env TRMNL_WEBHOOK_URL o TRMNL_PLUGIN_UUID). docs/TRMNL.md
 trmnl-hero:
 	$(PY) scripts/trmnl_hero.py --xlsx $(or $(DATOS),dist/demo_data.xlsx) --out dist/trmnl $(if $(PNG),--png,) $(if $(PUSH),--push,)
+
+trmnl-company:	# tarjeta de compañía desde Airtable (env AIRTABLE_PAT)
+	$(PY) scripts/trmnl_render.py --source airtable --kind company --out dist/trmnl --png
 
 pdf:
 	$(PY) scripts/build_overview_pdf.py dist/Marcador_WIG_4DX_Overview.pdf
@@ -48,4 +52,4 @@ publicar:
 		|| git commit -m "data: tablero semanal $$(date +%Y-%m-%d)" -- web/tablero.xlsx
 	git push
 
-.PHONY: build demo test trmnl trmnl-hero pdf migrate deploy publicar
+.PHONY: build demo test trmnl trmnl-hero trmnl-company pdf migrate deploy publicar
