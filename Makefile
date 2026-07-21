@@ -20,6 +20,11 @@ test:
 trmnl:
 	$(PY) scripts/trmnl_render.py --input $(INPUT) --out dist/trmnl $(if $(PNG),--png,)
 
+# hero de compañía desde un tablero real (recalculado). PUSH=1 publica al
+# webhook de TRMNL (env TRMNL_WEBHOOK_URL o TRMNL_PLUGIN_UUID). docs/TRMNL.md
+trmnl-hero:
+	$(PY) scripts/trmnl_hero.py --xlsx $(or $(DATOS),dist/demo_data.xlsx) --out dist/trmnl $(if $(PNG),--png,) $(if $(PUSH),--push,)
+
 trmnl-company:	# tarjeta de compañía desde Airtable (env AIRTABLE_PAT)
 	$(PY) scripts/trmnl_render.py --source airtable --kind company --out dist/trmnl --png
 
@@ -47,4 +52,4 @@ publicar:
 		|| git commit -m "data: tablero semanal $$(date +%Y-%m-%d)" -- web/tablero.xlsx
 	git push
 
-.PHONY: build demo test trmnl trmnl-company pdf migrate deploy publicar
+.PHONY: build demo test trmnl trmnl-hero trmnl-company pdf migrate deploy publicar

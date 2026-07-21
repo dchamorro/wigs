@@ -10,6 +10,10 @@ tarjetas que el dispositivo rota:
   company   — WIG de Compañía (NAT + cobertura + trayectoria)   [igual para todos]
   team      — Mi equipo      (lag acum. + tendencia + compromisos del equipo)
   incentive — Mi incentivo   (avance del variable, solo relativo, sin montos)
+  hero      — Hero de compañía (NAT real vs meta + ritmo + backlog + 12 WIGs)
+              [también es la pantalla que se publica a TRMNL vía webhook:
+               scripts/trmnl_hero.py genera el markup Liquid con este mismo
+               render y empuja los merge variables — ver docs/TRMNL.md]
 
 Fuente de datos:
   - from_json(path)                 — fixture local (pruebas y trabajo offline).
@@ -73,6 +77,31 @@ def glyph(status, cx, cy, r, sw=1.6):
                 f'<path d="M{cx},{cy - r} A{r},{r} 0 0,0 {cx},{cy + r} Z" fill="#000"/>')
     # atrasado / desconocido
     return f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#fff" stroke="#000" stroke-width="{sw}"/>'
+
+# Glifos reutilizables por <use>: la tarjeta hero referencia el estado por
+# nombre (`#g-meta` …), lo que permite que el MISMO template sirva de markup
+# Liquid para TRMNL (href="#g-{{ s1 }}") sin duplicar el layout.
+GLYPH_DEFS = (
+    '<defs>'
+    '<g id="g-meta"><circle r="7" fill="#000"/></g>'
+    '<g id="g-riesgo"><circle r="7" fill="#fff" stroke="#000" stroke-width="1.6"/>'
+    '<path d="M0,-7 A7,7 0 0,0 0,7 Z" fill="#000"/></g>'
+    '<g id="g-atrasado"><circle r="7" fill="#fff" stroke="#000" stroke-width="1.6"/></g>'
+    '<g id="g-none"><line x1="-5" y1="0" x2="5" y2="0" stroke="#000" stroke-width="1.6"/></g>'
+    '</defs>'
+)
+
+def use_glyph(status_key, x, y, scale=1.0):
+    """Glifo por referencia (#g-<estado>). `status_key` puede ser un placeholder
+    Liquid ({{ s1 }}) — por eso aquí no se valida ni se calcula nada."""
+    tr = f'translate({x},{y})' + (f' scale({scale})' if scale != 1 else '')
+    return f'<use href="#g-{status_key}" transform="{tr}"/>'
+
+def bar_px(x, y, w, h, fill_w, sw=1.4):
+    """Como bar(), pero el relleno viene ya calculado en px (int o placeholder
+    Liquid): el template hero no hace aritmética sobre sus valores."""
+    return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="#fff" stroke="#000" stroke-width="{sw}"/>'
+            f'<rect x="{x}" y="{y}" width="{fill_w}" height="{h}" fill="#000"/>')
 
 def _frame():
     return (f'<rect x="0" y="0" width="{W}" height="{H}" fill="#ffffff"/>'
@@ -265,11 +294,50 @@ def render_incentive(d):
     b.append(_legend([("meta", "en meta", 600), ("ritmo", "en ritmo", 680), ("atrasado", "atrás", 758)]))
     return _svg("".join(b))
 
+def render_hero(d):
+    """Hero de compañía. `d["hero"]` es un view-model PLANO: textos ya
+    formateados, anchos de barra en px y estados como clave de glifo
+    (meta/riesgo/atrasado/none). Así el mismo template emite el markup Liquid
+    de TRMNL cuando los valores son placeholders {{ … }} (trmnl_hero.py)."""
+    h = d["hero"]
+    b = [_frame(), GLYPH_DEFS,
+         _header(h["title"], h["subtitle"], h["week_label"], h["date_label"], title_size=26),
+         _col_divider(),
+         # izquierda: NAT del año en curso
+         text(24, 106, f'UTILIDAD NETA {h["nat_year"]} (NAT)', 13, bold=True, ls=1.2),
+         text(24, 158, h["nat_real"], 48, bold=True),
+         text(24, 184, f'de {h["nat_meta"]} · {h["nat_pct"]}% de la meta anual', 15),
+         bar_px(24, 196, 420, 16, h["nat_bar_w"]),
+         # ritmo al corte (acumulado vs plan)
+         use_glyph(h["nat_st"], 33, 246, 1.2),
+         text(50, 252, h["ritmo_label"], 16, bold=True),
+         text(24, 276, h["ritmo_note"], 13.5),
+         # cobertura de backlog
+         text(24, 322, f'COBERTURA DE BACKLOG {h["nat_year"]}', 13, bold=True, ls=1.2),
+         text(24, 362, f'{h["backlog_pct"]}%', 30, bold=True),
+         text(106, 362, "del GP meta comprometido", 14),
+         bar_px(24, 374, 420, 14, h["backlog_bar_w"]),
+         text(24, 410, h["backlog_note"], 13.5),
+         # derecha: semáforo de los 12 WIGs
+         text(486, 104, "LOS 12 WIGS — ¿VAMOS EN META?", 13, bold=True, ls=1.2),
+         use_glyph("meta", 492, 120, 0.8), text(502, 124, f'{h["n_meta"]} en meta', 12),
+         use_glyph("riesgo", 592, 120, 0.8), text(602, 124, f'{h["n_riesgo"]} en riesgo', 12),
+         use_glyph("atrasado", 694, 120, 0.8), text(704, 124, f'{h["n_atrasado"]} atrasados', 12)]
+    y = 148
+    for wig in h["wigs"]:
+        b.append(use_glyph(wig["st"], 494, y - 5))
+        b.append(text(510, y, wig["label"], 13.5))
+        y += 25
+    b.append(_footer(h["updated_label"], h.get("rally", "4DX · Todos remamos hacia la misma meta"),
+                     right_bold=True))
+    return _svg("".join(b))
+
 RENDERERS = {
     "marcador": render_marcador,
     "company": render_company,
     "team": render_team,
     "incentive": render_incentive,
+    "hero": render_hero,
 }
 KINDS = list(RENDERERS)
 

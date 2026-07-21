@@ -24,7 +24,7 @@ def bundle():
 
 def test_render_all_kinds():
     cards = t.render_all(bundle())
-    assert set(cards) == {'marcador', 'company', 'team', 'incentive'}, 'faltan tarjetas'
+    assert set(cards) == {'marcador', 'company', 'team', 'incentive', 'hero'}, 'faltan tarjetas'
 
 
 def test_well_formed_xml():
@@ -68,6 +68,34 @@ def test_glyph_semaphore_is_glyph_not_color():
     assert 'fill="#fff"' in atrasado and '<path' not in atrasado, 'atrasado = círculo vacío'
     for svg in t.render_all(bundle()).values():
         assert 'fill="#ccc"' not in svg and 'fill="gray"' not in svg, 'e-ink: sin grises'
+
+
+def test_hero_values_and_glyphs():
+    svg = t.render_hero(bundle())
+    for needle in ('UTILIDAD NETA 2027 (NAT)', '$418K', 'de $1M · 42% de la meta anual',
+                   'COBERTURA DE BACKLOG 2027', 'LOS 12 WIGS', '6 en meta',
+                   '1 · Parque Smart User +500 equipos', '12 · Utilización facturable 48%+'):
+        assert needle in svg, f'hero: falta «{needle}»'
+    # semáforo por referencia (permite markup Liquid con el mismo template)
+    assert 'href="#g-meta"' in svg and 'href="#g-riesgo"' in svg and 'href="#g-atrasado"' in svg
+    # barras precalculadas en px: 42% de 420 → 176 · 77% → 323
+    assert 'width="176" height="16" fill="#000"' in svg
+    assert 'width="323" height="14" fill="#000"' in svg
+
+
+def test_hero_markup_and_payload():
+    import scripts.trmnl_hero as th
+    markup = th.build_markup()
+    xml.dom.minidom.parseString(markup.split('-->', 1)[1])  # SVG bien formado
+    for needle in ('{{ nat_real }}', '{{ nat_bar_w }}', 'href="#g-{{ nat_st }}"',
+                   '{{ w1 }}', 'href="#g-{{ s12 }}"'):
+        assert needle in markup, f'markup: falta «{needle}»'
+    # el payload del fixture cabe en el límite de 2KB del webhook de TRMNL
+    import json
+    payload = th.to_payload(bundle()['hero'])
+    size = len(json.dumps({'merge_variables': payload}, ensure_ascii=False).encode('utf-8'))
+    assert size <= th.PAYLOAD_MAX, f'payload de {size} bytes excede {th.PAYLOAD_MAX}'
+    assert payload['w12'].startswith('12 ·') and payload['s1'] == 'meta'
 
 
 if __name__ == '__main__':
